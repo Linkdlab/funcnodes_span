@@ -7,9 +7,12 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+scipy = "^1.14.0"
 funcnodes = "^0.2.21"
-
 funcnodes_numpy = "^0.1.57"
+funcnodes_pandas = "^0.1.9"
+pooch = "^1.8.2"
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"
