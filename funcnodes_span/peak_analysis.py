@@ -12,6 +12,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import re
 
+
 class PeakProperties(TypedDict):
     id: str
     i_index: int
@@ -286,11 +287,11 @@ def peak_finder(
     return peak_properties_list
 
 
-# ['Constant', 'Complex Constant', 'Linear', 'Quadratic', 'Polynomial', 
-# 'Spline', 'Gaussian', 'Gaussian-2D', 'Lorentzian', 'Split-Lorentzian', 'Voigt', 
-# 'PseudoVoigt', 'Moffat', 'Pearson4', 'Pearson7', 'StudentsT', 'Breit-Wigner', 'Log-Normal', 
-# 'Damped Oscillator', 'Damped Harmonic Oscillator', 'Exponential Gaussian', 'Skewed Gaussian', 
-# 'Skewed Voigt', 'Thermal Distribution', 'Doniach', 'Power Law', 'Exponential', 'Step', 
+# ['Constant', 'Complex Constant', 'Linear', 'Quadratic', 'Polynomial',
+# 'Spline', 'Gaussian', 'Gaussian-2D', 'Lorentzian', 'Split-Lorentzian', 'Voigt',
+# 'PseudoVoigt', 'Moffat', 'Pearson4', 'Pearson7', 'StudentsT', 'Breit-Wigner', 'Log-Normal',
+# 'Damped Oscillator', 'Damped Harmonic Oscillator', 'Exponential Gaussian', 'Skewed Gaussian',
+# 'Skewed Voigt', 'Thermal Distribution', 'Doniach', 'Power Law', 'Exponential', 'Step',
 # 'Rectangle', 'Expression']
 
 
@@ -411,10 +412,7 @@ def fit_1D(
         )
         pars[f"peak{index+1}_amplitude"].set(value=y[peak["index"]], min=0)
 
-        if (
-            model == "Exponential Gaussian"
-            or model == "Skewed Gaussian"
-        ):
+        if model == "Exponential Gaussian" or model == "Skewed Gaussian":
             pars[f"peak{index+1}_gamma"].set(value=1)
 
         f += model
@@ -438,10 +436,7 @@ def fit_1D(
             value=out.__dict__["best_values"][f"peak{index+1}_amplitude"], min=0
         )
 
-        if (
-            model == "Exponential Gaussian"
-            or model == "Skewed Gaussian"
-        ):
+        if model == "Exponential Gaussian" or model == "Skewed Gaussian":
             pars[f"peak{index+1}_gamma"].set(
                 value=out.__dict__["best_values"][f"peak{index+1}_gamma"]
             )
@@ -474,8 +469,6 @@ def fit_1D(
     return peak_properties_list
 
 
-
-
 # Define a mapping from "C0", "C1", etc., to CSS color names
 color_map = {
     "C0": "blue",
@@ -490,9 +483,11 @@ color_map = {
     "C9": "cyan",
 }
 
-def plot_peaks(peaks):
+
+@NodeDecorator(id="span.basics.fit.plot", name="Plot fit 1D")
+def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     peak = peaks[0]
-    x =peak['fitting_info']['userkws']['x']
+    x = peak["fitting_info"]["userkws"]["x"]
     # Extract data from peaks
     y = peak["fitting_info"]["data"]
     best_fit = peak["fitting_info"]["best_fit"]
@@ -502,13 +497,21 @@ def plot_peaks(peaks):
 
     # Add the original data trace
     fig.add_trace(
-        go.Scatter(x=x, y=y, mode="lines", name="original", line=dict(color=color_map["C0"])),
+        go.Scatter(
+            x=x, y=y, mode="lines", name="original", line=dict(color=color_map["C0"])
+        ),
         secondary_y=False,
     )
 
     # Add the best fit trace
     fig.add_trace(
-        go.Scatter(x=x, y=best_fit, mode="lines", name="best_fit", line=dict(dash="dash", color=color_map["C1"])),
+        go.Scatter(
+            x=x,
+            y=best_fit,
+            mode="lines",
+            name="best_fit",
+            line=dict(dash="dash", color=color_map["C1"]),
+        ),
         secondary_y=False,
     )
 
@@ -518,9 +521,17 @@ def plot_peaks(peaks):
             color = color_map["C2"]
         else:
             peak_number = int(re.search(r"\d+", key).group())
-            color = color_map.get(f"C{peak_number + 2}", "black")  # Default to black if not found
-        
-        trace = go.Scatter(x=x, y=peak["fitting_data"][key], mode="lines", name=key, line=dict(color=color))
+            color = color_map.get(
+                f"C{peak_number + 2}", "black"
+            )  # Default to black if not found
+
+        trace = go.Scatter(
+            x=x,
+            y=peak["fitting_data"][key],
+            mode="lines",
+            name=key,
+            line=dict(color=color),
+        )
         fig.add_trace(trace, secondary_y=(key != "baseline"))
 
     # Update axes labels and legend
@@ -528,18 +539,17 @@ def plot_peaks(peaks):
     fig.update_yaxes(title_text="Baseline corrected", secondary_y=True)
     fig.update_layout(
         title={
-        'text': f"{peak['fitting_info']['model_name']} model with fitting score = {np.round(peak['fitting_info']['rsquared'], 4)}",
-        'x': 0.5,  # Center the title
-        'xanchor': 'center'
-    },
+            "text": f"{peak['fitting_info']['model_name']} model with fitting score = {np.round(peak['fitting_info']['rsquared'], 4)}",
+            "x": 0.5,  # Center the title
+            "xanchor": "center",
+        },
     )
 
     return fig
 
 
-
 PEAKS_NODE_SHELF = Shelf(
-    nodes=[peak_finder, fit_1D],
+    nodes=[peak_finder, fit_1D, plot_fitted_peaks],
     subshelves=[],
     name="Peak analysis",
     description="Tools for the peak analysis of the spectra",
