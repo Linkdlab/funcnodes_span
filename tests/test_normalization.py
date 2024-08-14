@@ -10,9 +10,16 @@ class TestNormalization(unittest.IsolatedAsyncioTestCase):
     async def test_default(self):
         norm: fn.Node = _norm()
         norm.inputs["array"].value = electrocardiogram()[2000:4000]
-        norm.inputs["mode"].value = NormMode.ZERO_ONE
         self.assertIsInstance(norm, fn.Node)
         await norm
         out = norm.outputs["out"]
         self.assertIsInstance(out.value, np.ndarray)
 
+    async def test_non_default_mode(self):
+        norm: fn.Node = _norm()
+        norm.inputs["array"].value = electrocardiogram()[2000:4000]
+        norm.inputs["mode"].value = NormMode.SUM_ABS
+        self.assertIsInstance(norm, fn.Node)
+        await norm
+        out = norm.outputs["out"]
+        self.assertIsInstance(out.value, np.ndarray)

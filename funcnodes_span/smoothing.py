@@ -18,7 +18,7 @@ class SmoothMode(Enum):
     @classmethod
     def default(cls) -> 'SmoothMode':
         """Returns the default smoothing mode."""
-        return cls.SAVITZKY_GOLAY
+        return cls.SAVITZKY_GOLAY.value
 
 @NodeDecorator("span.basics.smooth", name="Smoothing")
 
@@ -37,7 +37,8 @@ def _smooth(array: np.ndarray, mode: SmoothMode = SmoothMode.default(), window: 
     # Raises:
     #     ValueError: If an unsupported smoothing mode is provided.
     # """
-    
+    if isinstance(mode, SmoothMode):
+        mode = mode.value
     def smooth_savgol(x: np.ndarray) -> np.ndarray:
         return savgol_filter(x, window, 2)
     
@@ -68,14 +69,14 @@ def _smooth(array: np.ndarray, mode: SmoothMode = SmoothMode.default(), window: 
         return medfilt(x, window)
     
     smoothing_methods = {
-        SmoothMode.SAVITZKY_GOLAY: smooth_savgol,
-        SmoothMode.GAUSSIAN: smooth_gaussian,
-        SmoothMode.MOVING_AVERAGE: smooth_ma,
-        SmoothMode.EXPONENTIAL_MOVING_AVERAGE: smooth_ema,
-        SmoothMode.MEDIAN: smooth_median
+        SmoothMode.SAVITZKY_GOLAY.value: smooth_savgol,
+        SmoothMode.GAUSSIAN.value: smooth_gaussian,
+        SmoothMode.MOVING_AVERAGE.value: smooth_ma,
+        SmoothMode.EXPONENTIAL_MOVING_AVERAGE.value: smooth_ema,
+        SmoothMode.MEDIAN.value: smooth_median
     }
     
-    if mode not in smoothing_methods:
+    if mode not in smoothing_methods.keys():
         raise ValueError(f"Unsupported smoothing mode: {mode}")
     
     return smoothing_methods[mode](array)
