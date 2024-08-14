@@ -337,7 +337,7 @@ def fit_1D(
     x_array: np.ndarray,
     y_array: np.ndarray,
     basic_peaks: List[PeakProperties],
-    model: FittingModel = FittingModel.default(),
+    model_name: FittingModel = FittingModel.default(),
 ) -> List[PeakProperties]:
     # """
     # Fit a 1D model to the given data.
@@ -357,8 +357,8 @@ def fit_1D(
     #         A tuple containing a dictionary of evaluated components of the fit and additional information about the fit, and an optional figure for the plot.
 
     # """
-    if isinstance(model, FittingModel):
-        model = model.value
+    if isinstance(model_name, FittingModel):
+        model_name = model_name.value
     peaks = copy.deepcopy(basic_peaks)
     y = y_array
     x = x_array
@@ -392,7 +392,7 @@ def fit_1D(
     # ['Constant', 'Complex Constant', 'Linear', 'Quadratic', 'Polynomial', 'Spline', 'Gaussian', 'Gaussian-2D', 'Lorentzian', 'Split-Lorentzian', 'Voigt', 'PseudoVoigt', 'Moffat', 'Pearson4', 'Pearson7', 'StudentsT', 'Breit-Wigner', 'Log-Normal', 'Damped Oscillator', 'Damped Harmonic Oscillator', 'Exponential Gaussian', 'Skewed Gaussian', 'Skewed Voigt', 'Thermal Distribution', 'Doniach', 'Power Law', 'Exponential', 'Step', 'Rectangle', 'Expression']
     # peak like models are:  GaussianModel, LorentzianModel, VoigtModel and their modified versions
 
-    fitting_model = lmfit.models.__dict__["lmfit_models"][model]
+    fitting_model = lmfit.models.__dict__["lmfit_models"][model_name]
     # bkg1 = lmfit.models.__dict__["lmfit_models"]["Spline"](prefix="baseline", xknots=np.concatenate((x[:lowest_index], x[highest_index:])))
     bkg2 = lmfit.models.__dict__["lmfit_models"]["Exponential"](prefix="baseline")
 
@@ -412,7 +412,7 @@ def fit_1D(
         )
         pars[f"peak{index+1}_amplitude"].set(value=y[peak["index"]], min=0)
 
-        if model == "Exponential Gaussian" or model == "Skewed Gaussian":
+        if model_name == "Exponential Gaussian" or model_name == "Skewed Gaussian":
             pars[f"peak{index+1}_gamma"].set(value=1)
 
         f += model
@@ -436,7 +436,7 @@ def fit_1D(
             value=out.__dict__["best_values"][f"peak{index+1}_amplitude"], min=0
         )
 
-        if model == "Exponential Gaussian" or model == "Skewed Gaussian":
+        if model_name == "Exponential Gaussian" or model_name == "Skewed Gaussian":
             pars[f"peak{index+1}_gamma"].set(
                 value=out.__dict__["best_values"][f"peak{index+1}_gamma"]
             )
@@ -446,7 +446,7 @@ def fit_1D(
     out = f.fit(y, pars, x=x)
     com = out.eval_components(x=x)
     info_dict = out.__dict__
-    info_dict["model_name"] = model
+    info_dict["model_name"] = model_name
 
     peak_properties_list = []
 
