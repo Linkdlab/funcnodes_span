@@ -179,7 +179,7 @@ def compute_peak_properties(
     return peak_properties
 
 
-@NodeDecorator(id="span.basics.peaks", name="Peak finder node")
+@NodeDecorator(id="span.basics.peaks", name="Peak finder")
 @controlled_wrapper(find_peaks, wrapper_attribute="__fnwrapped__")
 def peak_finder(
     x_array: np.ndarray,
@@ -310,14 +310,14 @@ class FittingModel(Enum):
     Moffat = "Moffat"
     Pearson4 = "Pearson4"
     Pearson7 = "Pearson7"
+    SkewedGaussian = "Skewed Gaussian"
+    SkewedVoigt = "Skewed Voigt"
     StudentsT = "StudentsT"
     BreitWigner = "Breit-Wigner"
     LogNormal = "Log-Normal"
     DampedOscillator = "Damped Oscillator"
     DampedHarmonicOscillator = "Damped Harmonic Oscillator"
     ExponentialGaussian = "Exponential Gaussian"
-    SkewedGaussian = "Skewed Gaussian"
-    SkewedVoigt = "Skewed Voigt"
     ThermalDistribution = "Thermal Distribution"
     Doniach = "Doniach"
     PowerLaw = "Power Law"
