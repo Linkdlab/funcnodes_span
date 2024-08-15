@@ -356,7 +356,7 @@ class BaselineModel(Enum):
 
     @classmethod
     def default(cls):
-        return cls.Gaussian.value
+        return cls.Exponential.value
     
 @NodeDecorator(id="span.basics.fit", name="Fit 1D")
 def fit_1D(
