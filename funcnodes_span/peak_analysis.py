@@ -395,11 +395,13 @@ def fit_1D(
 
     lowest_index = min(dictionary["i_index"] for dictionary in peaks)
     highest_index = max(dictionary["f_index"] for dictionary in peaks)
-
-
+    knots=np.concatenate((x[:lowest_index], x[highest_index:]))
+    if len(knots) > 300:
+        knots = np.random.choice(knots, size=300, replace=False)
+        
     fitting_model = lmfit.models.__dict__["lmfit_models"][main_model]
     if baseline_model == "Spline":
-        bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline", xknots=np.concatenate((x[:lowest_index], x[highest_index:])))
+        bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline", xknots=knots)
     else:
         bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline")
         
