@@ -347,7 +347,7 @@ class FittingModel(Enum):
         return cls.Gaussian.value
     
 class BaselineModel(Enum):
-    Polynomial = "Polynomial"
+    # Polynomial = "Polynomial"
     Linear = "Linear"
     Spline = "Spline"
     PowerLaw = "Power Law"
@@ -363,7 +363,7 @@ def fit_1D(
     x_array: np.ndarray,
     y_array: np.ndarray,
     basic_peaks: List[PeakProperties],
-    model_name: FittingModel = FittingModel.default(),
+    main_model: FittingModel = FittingModel.default(),
     baseline_model: BaselineModel = BaselineModel.default(),
 ) -> List[PeakProperties]:
     # """
@@ -384,47 +384,25 @@ def fit_1D(
     #         A tuple containing a dictionary of evaluated components of the fit and additional information about the fit, and an optional figure for the plot.
 
     # """
-    if isinstance(model_name, FittingModel):
-        model_name = model_name.value
+    if isinstance(main_model, FittingModel):
+        main_model = main_model.value
     if isinstance(baseline_model, BaselineModel):
         baseline_model = baseline_model.value
     peaks = copy.deepcopy(basic_peaks)
     y = y_array
     x = x_array
     # if is_sturated:
-    #     if len(peaks['peaks']) == 2:
-    #         peaks['peaks'] = [{
-    #             "Peak #": 'peak1_',
-    #             "Index": peaks['peaks'][0]['Ending index'] + int( (peaks['peaks'][1]['Initial index'] - peaks['peaks'][0]['Ending index'])/ 2),
-    #             "Initial index": peaks['peaks'][0]['Ending index'],
-    #             "Ending index": peaks['peaks'][1]['Initial index'],
-    #             "Retention": np.NaN,
-    #             "Area": np.NaN,
-    #             "Height": y[peaks['peaks'][0]['Ending index'] + int( (peaks['peaks'][1]['Initial index'] - peaks['peaks'][0]['Ending index'])/ 2)],
-    #             "Symmetricity": np.NaN,
-    #             "Tailing": np.NaN,
-    #             "FWHM": np.NaN,
-    #             "Plate #": np.NaN,
-    #             "Width":  x[peaks['peaks'][1]['Initial index']] - x[peaks['peaks'][0]['Ending index']],
-    #             "is_fitted": False,
-    #         }]
-    #                     not_saturated_x = np.concatenate((x[:peaks['peaks'][0]['Ending index']-1], x[peaks['peaks'][1]['Initial index']+1:]))
-    #         not_saturated_y = np.concatenate((y[:peaks['peaks'][0]['Ending index']-1], y[peaks['peaks'][1]['Initial index']+1:]))
-    #     else:
-    #         raise ValueError('invalid number of peak selection. Either the entire or two sides of the saturated peak should be selected')
 
     lowest_index = min(dictionary["i_index"] for dictionary in peaks)
     highest_index = max(dictionary["f_index"] for dictionary in peaks)
 
-    # list of modelnames:
-    # lmfit.models.__dict__['lmfit_models'].keys()
-    # ['Constant', 'Complex Constant', 'Linear', 'Quadratic', 'Polynomial', 'Spline', 'Gaussian', 'Gaussian-2D', 'Lorentzian', 'Split-Lorentzian', 'Voigt', 'PseudoVoigt', 'Moffat', 'Pearson4', 'Pearson7', 'StudentsT', 'Breit-Wigner', 'Log-Normal', 'Damped Oscillator', 'Damped Harmonic Oscillator', 'Exponential Gaussian', 'Skewed Gaussian', 'Skewed Voigt', 'Thermal Distribution', 'Doniach', 'Power Law', 'Exponential', 'Step', 'Rectangle', 'Expression']
-    # peak like models are:  GaussianModel, LorentzianModel, VoigtModel and their modified versions
 
-    fitting_model = lmfit.models.__dict__["lmfit_models"][model_name]
-    # bkg1 = lmfit.models.__dict__["lmfit_models"]["Spline"](prefix="baseline", xknots=np.concatenate((x[:lowest_index], x[highest_index:])))
-    bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline")
-
+    fitting_model = lmfit.models.__dict__["lmfit_models"][main_model]
+    if baseline_model == "Spline":
+        bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline", xknots=np.concatenate((x[:lowest_index], x[highest_index:])))
+    else:
+        bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline")
+        
     f = bkg2
 
     pars = f.guess(y, x=x)
@@ -441,7 +419,7 @@ def fit_1D(
         )
         pars[f"peak{index+1}_amplitude"].set(value=y[peak["index"]], min=0)
 
-        if model_name == "Exponential Gaussian" or model_name == "Skewed Gaussian":
+        if main_model == "Exponential Gaussian" or main_model == "Skewed Gaussian":
             pars[f"peak{index+1}_gamma"].set(value=1)
 
         f += model
@@ -465,7 +443,7 @@ def fit_1D(
             value=out.__dict__["best_values"][f"peak{index+1}_amplitude"], min=0
         )
 
-        if model_name == "Exponential Gaussian" or model_name == "Skewed Gaussian":
+        if main_model == "Exponential Gaussian" or main_model == "Skewed Gaussian":
             pars[f"peak{index+1}_gamma"].set(
                 value=out.__dict__["best_values"][f"peak{index+1}_gamma"]
             )
@@ -475,7 +453,7 @@ def fit_1D(
     out = f.fit(y, pars, x=x)
     com = out.eval_components(x=x)
     info_dict = out.__dict__
-    info_dict["model_name"] = model_name
+    info_dict["model_name"] = main_model
 
     peak_properties_list = []
 
