@@ -398,7 +398,6 @@ def fit_1D(
     knots=np.concatenate((x[:lowest_index], x[highest_index:]))
     if len(knots) > 300:
         knots = np.sort(np.random.choice(knots, size=300, replace=False)) 
-        knots = np.random.choice(knots, size=300, replace=False)
         
     fitting_model = lmfit.models.__dict__["lmfit_models"][main_model]
     if baseline_model == "Spline":
