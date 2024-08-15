@@ -2,10 +2,11 @@ from funcnodes import NodeDecorator, Shelf
 import numpy as np
 from enum import Enum
 from exposedfunctionality import controlled_wrapper
-from typing import Optional, TypedDict, List
+from typing import Optional, TypedDict, List, Tuple
 from scipy.signal import find_peaks
 from scipy.stats import norm
-from scipy import interpolate
+from scipy import signal, interpolate
+from scipy.ndimage import gaussian_filter1d
 import copy
 import lmfit
 import plotly.graph_objs as go
@@ -332,6 +333,25 @@ class FittingModel(Enum):
         return cls.Gaussian.value
 
 
+@NodeDecorator(
+    "span.basics.interpolation_1d",
+    name="Interpolation 1D",
+    outputs=[
+        {
+            "name": "x_interpolated",
+        },
+        {"name": "y_interpolated"},
+    ],
+)
+def interpolation_1d(
+    x: np.array, y: np.array, multipled_by: int = 10
+) -> Tuple[np.ndarray, np.ndarray]:
+    f_interpol = interpolate.interp1d(x, y)
+    x_interpolated = np.linspace(x[0], x[-1], num=len(x) * multipled_by, endpoint=True)
+    y_interpolated = f_interpol(x_interpolated)
+    return x_interpolated, y_interpolated
+
+
 @NodeDecorator(id="span.basics.fit", name="Fit 1D")
 def fit_1D(
     x_array: np.ndarray,
@@ -469,6 +489,109 @@ def fit_1D(
     return peak_properties_list
 
 
+
+
+
+@NodeDecorator(
+    "span.basics.force_fit",
+    name="Advanced peak finder",
+)
+def force_peak_finder(
+    x: np.array,
+    y: np.array,
+    basic_peaks: PeakProperties,
+) -> List[PeakProperties]:
+    # """
+    # Identify and return the two peaks around the main peak in the given peaks dictionary.
+
+    # Parameters:
+    # - peaks (dict): A dictionary containing peak information.
+    #                 It should have the keys 'peaks' and 'data'.
+    #                 'peaks' should contain a list of dictionaries with keys 'Initial index', 'Index', and 'Ending index'.
+    #                 'data' should contain arrays 'x' and 'y'.
+
+    # Returns:
+    # - dict: A dictionary containing information about the two identified peaks.
+    # """
+    peaks = copy.deepcopy(basic_peaks)
+
+    main_peak_i_index = peaks["i_index"]
+    main_peak_r_index = peaks["index"]
+    main_peak_f_index = peaks["f_index"]
+    y_array = y
+    x_array = x
+    # Calculate first and second derivatives
+    y_array_p = np.diff(y_array, 1, -1, y_array[0])
+    y_array_pp = np.diff(y_array, 2, -1, y_array[0:2])
+    # Smooth derivatives using Gaussian filter
+    y_array_p = gaussian_filter1d(y_array_p, 5)
+    y_array_pp = gaussian_filter1d(y_array_pp, 5)
+
+    maxx = [main_peak_r_index]
+    minn = [main_peak_i_index, main_peak_f_index]
+    # Find local maxima and minima of derivatives
+    max_p = signal.argrelmax(y_array_p)[0]
+    min_p = signal.argrelmin(y_array_p)[0]
+    max_pp = signal.argrelmax(y_array_pp)[0]
+    min_pp = signal.argrelmin(y_array_pp)[0]
+
+    # main_peak_i_index = peaks["i_index"]
+    # main_peak_r_index = peaks["index"]
+    # main_peak_f_index = peaks["f_index"]
+
+
+    # Determine which peak is on the left and right side of the main peak
+    if (
+        x_array[main_peak_r_index] - x_array[main_peak_i_index]
+        > x_array[main_peak_f_index] - x_array[main_peak_r_index]
+    ):  # seond peak is in the leftside of the max peak #TODO: fix this
+        common_point = max([num for num in max_pp if num < main_peak_r_index])
+
+        print("Left convoluted")
+        peak1 = {
+            "I.Index": main_peak_i_index,
+            "R.Index": max(
+                [num for num in min_p if num < main_peak_r_index]
+            ),  # TODO: fix this
+            "F.Index": common_point,
+        }
+        peak2 = {
+            "I.Index": common_point,
+            "R.Index": main_peak_r_index,
+            "F.Index": main_peak_f_index,
+        }
+    else:
+        common_point = next((x for x in max_pp if x > main_peak_r_index), None)
+        print("Right convoluted")
+        peak1 = {
+            "I.Index": main_peak_i_index,
+            "R.Index": main_peak_r_index,
+            "F.Index": common_point,
+        }
+        peak2 = {
+            "I.Index": common_point,
+            "R.Index": next((x for x in max_p if x > main_peak_r_index), None),
+            "F.Index": main_peak_f_index,
+        }
+    peak_lst = []
+    peak_lst.append([peak1["I.Index"], peak1["R.Index"], peak1["F.Index"]])
+    peak_lst.append([peak2["I.Index"], peak2["R.Index"], peak2["F.Index"]])
+    peak_properties_list = []
+    for peak_nr, peak in enumerate(peak_lst):
+        peak_properties = compute_peak_properties(
+            x_array=x_array,
+            y_array=y_array,
+            peak_indices=peak,
+            peak_nr=peak_nr,
+            is_force_fitted=True,
+        )
+        peak_properties_list.append(peak_properties)
+
+    return peak_properties_list
+
+
+
+
 # Define a mapping from "C0", "C1", etc., to CSS color names
 color_map = {
     "C0": "blue",
@@ -487,6 +610,9 @@ color_map = {
 @NodeDecorator(id="span.basics.fit.plot", name="Plot fit 1D")
 def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     peak = peaks[0]
+    if not peak['_is_fitted']:
+        raise ValueError("No fitting information is available.")
+    
     x = peak["fitting_info"]["userkws"]["x"]
     # Extract data from peaks
     y = peak["fitting_info"]["data"]
@@ -549,7 +675,7 @@ def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
 
 
 PEAKS_NODE_SHELF = Shelf(
-    nodes=[peak_finder, fit_1D, plot_fitted_peaks],
+    nodes=[peak_finder, interpolation_1d, force_peak_finder, fit_1D, plot_fitted_peaks],
     subshelves=[],
     name="Peak analysis",
     description="Tools for the peak analysis of the spectra",
