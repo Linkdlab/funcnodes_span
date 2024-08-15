@@ -499,7 +499,7 @@ def fit_1D(
 def force_peak_finder(
     x: np.array,
     y: np.array,
-    basic_peaks: PeakProperties,
+    basic_peaks: List[PeakProperties],
 ) -> List[PeakProperties]:
     # """
     # Identify and return the two peaks around the main peak in the given peaks dictionary.
@@ -513,6 +513,10 @@ def force_peak_finder(
     # Returns:
     # - dict: A dictionary containing information about the two identified peaks.
     # """
+    if len(basic_peaks) != 1:
+        raise ValueError("This method accepts only one main peak as an input.")
+    elif len(basic_peaks) == 0:
+        raise ValueError("No peaks found.")
     peaks = copy.deepcopy(basic_peaks)
 
     main_peak_i_index = peaks["i_index"]
