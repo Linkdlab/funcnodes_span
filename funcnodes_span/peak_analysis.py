@@ -296,41 +296,7 @@ def peak_finder(
 # 'Rectangle', 'Expression']
 
 
-class FittingModel(Enum):
-    ComplexConstant = "Complex Constant"
-    Linear = "Linear"
-    Quadratic = "Quadratic"
-    Polynomial = "Polynomial"
-    Spline = "Spline"
-    Gaussian = "Gaussian"
-    Gaussian2D = "Gaussian-2D"
-    Lorentzian = "Lorentzian"
-    SplitLorentzian = "Split-Lorentzian"
-    Voigt = "Voigt"
-    PseudoVoigt = "PseudoVoigt"
-    Moffat = "Moffat"
-    Pearson4 = "Pearson4"
-    Pearson7 = "Pearson7"
-    SkewedGaussian = "Skewed Gaussian"
-    SkewedVoigt = "Skewed Voigt"
-    StudentsT = "StudentsT"
-    BreitWigner = "Breit-Wigner"
-    LogNormal = "Log-Normal"
-    DampedOscillator = "Damped Oscillator"
-    DampedHarmonicOscillator = "Damped Harmonic Oscillator"
-    ExponentialGaussian = "Exponential Gaussian"
-    ThermalDistribution = "Thermal Distribution"
-    Doniach = "Doniach"
-    PowerLaw = "Power Law"
-    Exponential = "Exponential"
-    Step = "Step"
-    Rectangle = "Rectangle"
-    Expression = "Expression"
-    Constant = "Constant"
 
-    @classmethod
-    def default(cls):
-        return cls.Gaussian.value
 
 
 @NodeDecorator(
@@ -351,13 +317,54 @@ def interpolation_1d(
     y_interpolated = f_interpol(x_interpolated)
     return x_interpolated, y_interpolated
 
+class FittingModel(Enum):
+    ComplexConstant = "Complex Constant"
+    Gaussian = "Gaussian"
+    Gaussian2D = "Gaussian-2D"
+    Lorentzian = "Lorentzian"
+    SplitLorentzian = "Split-Lorentzian"
+    Voigt = "Voigt"
+    PseudoVoigt = "PseudoVoigt"
+    Moffat = "Moffat"
+    Pearson4 = "Pearson4"
+    Pearson7 = "Pearson7"
+    SkewedGaussian = "Skewed Gaussian"
+    SkewedVoigt = "Skewed Voigt"
+    StudentsT = "StudentsT"
+    BreitWigner = "Breit-Wigner"
+    LogNormal = "Log-Normal"
+    DampedOscillator = "Damped Oscillator"
+    DampedHarmonicOscillator = "Damped Harmonic Oscillator"
+    ExponentialGaussian = "Exponential Gaussian"
+    ThermalDistribution = "Thermal Distribution"
+    Doniach = "Doniach"
+    Step = "Step"
+    Rectangle = "Rectangle"
+    Expression = "Expression"
 
+    @classmethod
+    def default(cls):
+        return cls.Gaussian.value
+    
+class BaselineModel(Enum):
+    Polynomial = "Polynomial"
+    Linear = "Linear"
+    Spline = "Spline"
+    PowerLaw = "Power Law"
+    Exponential = "Exponential"
+    Constant = "Constant"
+
+    @classmethod
+    def default(cls):
+        return cls.Gaussian.value
+    
 @NodeDecorator(id="span.basics.fit", name="Fit 1D")
 def fit_1D(
     x_array: np.ndarray,
     y_array: np.ndarray,
     basic_peaks: List[PeakProperties],
     model_name: FittingModel = FittingModel.default(),
+    baseline_model: BaselineModel = BaselineModel.default(),
 ) -> List[PeakProperties]:
     # """
     # Fit a 1D model to the given data.
@@ -379,6 +386,8 @@ def fit_1D(
     # """
     if isinstance(model_name, FittingModel):
         model_name = model_name.value
+    if isinstance(baseline_model, BaselineModel):
+        baseline_model = baseline_model.value
     peaks = copy.deepcopy(basic_peaks)
     y = y_array
     x = x_array
@@ -414,7 +423,7 @@ def fit_1D(
 
     fitting_model = lmfit.models.__dict__["lmfit_models"][model_name]
     # bkg1 = lmfit.models.__dict__["lmfit_models"]["Spline"](prefix="baseline", xknots=np.concatenate((x[:lowest_index], x[highest_index:])))
-    bkg2 = lmfit.models.__dict__["lmfit_models"]["Exponential"](prefix="baseline")
+    bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline")
 
     f = bkg2
 
@@ -514,11 +523,9 @@ def force_peak_finder(
     # - dict: A dictionary containing information about the two identified peaks.
     # """
     if len(basic_peaks) != 1:
-        raise ValueError("This method accepts only one main peak as an input.")
-    elif len(basic_peaks) == 0:
-        raise ValueError("No peaks found.")
-    peaks = copy.deepcopy(basic_peaks)
+        raise ValueError("This method accepts one and only one main peak as an input.")
 
+    peaks = copy.deepcopy(basic_peaks[0])
     main_peak_i_index = peaks["i_index"]
     main_peak_r_index = peaks["index"]
     main_peak_f_index = peaks["f_index"]
