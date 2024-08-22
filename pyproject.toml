@@ -1,10 +1,11 @@
 [tool.poetry]
 name = "funcnodes-span"
-version = "0.1.15"
+version = "0.1.16"
 description = ""
 authors = ["Kourosh Rezaei <kouroshrezaei90@gmail.com>"]
 readme = "README.md"
-
+homepage = "https://linkdlab.de/"
+repository = "https://github.com/kouroshrezaei/funcnodes_span"
 [tool.poetry.dependencies]
 python = "^3.11"
 scipy = "^1.14.0"

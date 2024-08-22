@@ -296,9 +296,6 @@ def peak_finder(
 # 'Rectangle', 'Expression']
 
 
-
-
-
 @NodeDecorator(
     "span.basics.interpolation_1d",
     name="Interpolation 1D",
@@ -316,6 +313,7 @@ def interpolation_1d(
     x_interpolated = np.linspace(x[0], x[-1], num=len(x) * multipled_by, endpoint=True)
     y_interpolated = f_interpol(x_interpolated)
     return x_interpolated, y_interpolated
+
 
 class FittingModel(Enum):
     ComplexConstant = "Complex Constant"
@@ -345,7 +343,8 @@ class FittingModel(Enum):
     @classmethod
     def default(cls):
         return cls.Gaussian.value
-    
+
+
 class BaselineModel(Enum):
     # Polynomial = "Polynomial"
     Linear = "Linear"
@@ -357,7 +356,8 @@ class BaselineModel(Enum):
     @classmethod
     def default(cls):
         return cls.Exponential.value
-    
+
+
 @NodeDecorator(id="span.basics.fit", name="Fit 1D")
 def fit_1D(
     x_array: np.ndarray,
@@ -395,16 +395,18 @@ def fit_1D(
 
     lowest_index = min(dictionary["i_index"] for dictionary in peaks)
     highest_index = max(dictionary["f_index"] for dictionary in peaks)
-    knots=np.concatenate((x[:lowest_index], x[highest_index:]))
+    knots = np.concatenate((x[:lowest_index], x[highest_index:]))
     if len(knots) > 300:
-        knots = np.sort(np.random.choice(knots, size=300, replace=False)) 
-        
+        knots = np.sort(np.random.choice(knots, size=300, replace=False))
+
     fitting_model = lmfit.models.__dict__["lmfit_models"][main_model]
     if baseline_model == "Spline":
-        bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline", xknots=knots)
+        bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](
+            prefix="baseline", xknots=knots
+        )
     else:
         bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline")
-        
+
     f = bkg2
 
     pars = f.guess(y, x=x)
@@ -478,9 +480,6 @@ def fit_1D(
     return peak_properties_list
 
 
-
-
-
 @NodeDecorator(
     "span.basics.force_fit",
     name="Advanced peak finder",
@@ -529,7 +528,6 @@ def force_peak_finder(
     # main_peak_i_index = peaks["i_index"]
     # main_peak_r_index = peaks["index"]
     # main_peak_f_index = peaks["f_index"]
-
 
     # Determine which peak is on the left and right side of the main peak
     if (
@@ -581,9 +579,56 @@ def force_peak_finder(
     return peak_properties_list
 
 
+@NodeDecorator(id="span.basics.peaks.plot", name="Plot peaks")
+def plot_peaks(
+    x_array: np.array, y_array: np.array, peaks_dict: List[PeakProperties]
+) -> go.Figure:
+    fig = go.Figure()
+
+    # Set up line plot
+    plot_trace = {"x": x_array, "y": y_array, "mode": "lines", "name": "data"}
+
+    fig.add_trace(go.Scatter(**plot_trace))
+
+    # Define a list of colors for the peaks
+    peaks_colors = ["orange", "green", "red", "blue"]
+
+    # Add rectangle shapes for each peak
+    for index, peak in enumerate(peaks_dict):
+        initial_idx = peak["i_index"]
+        ending_idx = peak["f_index"]
+        peak_height = peak["y_at_index"]
+        plot_y_min = min(y_array[initial_idx], y_array[ending_idx])
+
+        # Create a scatter trace that simulates a rectangle
+        fig.add_trace(
+            go.Scatter(
+                x=[
+                    x_array[initial_idx],
+                    x_array[ending_idx],
+                    x_array[ending_idx],
+                    x_array[initial_idx],
+                ],
+                y=[plot_y_min, plot_y_min, peak_height, peak_height],
+                fill="toself",
+                fillcolor=peaks_colors[index % len(peaks_colors)],
+                opacity=0.3,
+                line=dict(width=0),
+                mode="lines",
+                name=f"Peak {peak['id']}",
+            )
+        )
+
+    # Customize layout (axes labels and title can be added here if needed)
+    fig.update_layout(
+        xaxis_title="x",
+        yaxis_title="y",
+        template="plotly_white",
+    )
+
+    return fig
 
 
-# Define a mapping from "C0", "C1", etc., to CSS color names
 color_map = {
     "C0": "blue",
     "C1": "orange",
@@ -601,9 +646,9 @@ color_map = {
 @NodeDecorator(id="span.basics.fit.plot", name="Plot fit 1D")
 def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     peak = peaks[0]
-    if not peak['_is_fitted']:
+    if not peak["_is_fitted"]:
         raise ValueError("No fitting information is available.")
-    
+
     x = peak["fitting_info"]["userkws"]["x"]
     # Extract data from peaks
     y = peak["fitting_info"]["data"]
@@ -666,7 +711,14 @@ def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
 
 
 PEAKS_NODE_SHELF = Shelf(
-    nodes=[peak_finder, interpolation_1d, force_peak_finder, fit_1D, plot_fitted_peaks],
+    nodes=[
+        peak_finder,
+        interpolation_1d,
+        force_peak_finder,
+        plot_peaks,
+        fit_1D,
+        plot_fitted_peaks,
+    ],
     subshelves=[],
     name="Peak analysis",
     description="Tools for the peak analysis of the spectra",
