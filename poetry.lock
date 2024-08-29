@@ -203,13 +203,13 @@ numpy = "*"
 
 [[package]]
 name = "funcnodes-pandas"
-version = "0.2.0"
+version = "0.2.1"
 description = ""
 optional = false
 python-versions = ">=3.11"
 files = [
-    {file = "funcnodes_pandas-0.2.0-py3-none-any.whl", hash = "sha256:d389eda88b78502a97c8b1aaf72dc5bf558adb08169975e71b2ddc59f9948114"},
-    {file = "funcnodes_pandas-0.2.0.tar.gz", hash = "sha256:60c10d4c800e0c439488b5fa62946110ef609141f4b23045660c33be6601c606"},
+    {file = "funcnodes_pandas-0.2.1-py3-none-any.whl", hash = "sha256:f3d3eda342a42ea1f0b167fc853b4a684e5656d5197c635438a1f091502f4e1a"},
+    {file = "funcnodes_pandas-0.2.1.tar.gz", hash = "sha256:1d88ec48b45657b105b4cf8a853e059d17e32de600b43f8a40e38e7b6cb864f7"},
 ]
 
 [package.dependencies]
@@ -1111,5 +1111,5 @@ files = [
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.11"
-content-hash = "cab0778d216f22109067ec0a0431fd671c8d76cd4d6dbc82c5d135c61ab87906"
+python-versions = ">=3.11"
+content-hash = "59c567f3f5cee181e017518384a87b4006cf5f1b7f0972c9f2380a0bb8edda0d"

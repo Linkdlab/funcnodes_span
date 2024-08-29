@@ -192,10 +192,13 @@ def peak_finder(
     prominence: Optional[float] = None,
     width: Optional[float] = None,
     wlen: Optional[int] = None,
-    rel_height: Optional[float] = None,
+    rel_height: float = 0.5,
     plateau_size: Optional[int] = None,
 ) -> dict:
     peak_lst = []
+    x_array = np.array(x_array)
+    y_array = np.array(y_array)
+
     height = 0.05 * np.max(y_array) if height is None else height
     noise_level = 5000 if noise_level is None else noise_level
 
@@ -381,7 +384,8 @@ def fit_1D(
 
     # Returns:
     #     Tuple[dict, Optional[Figure]]:
-    #         A tuple containing a dictionary of evaluated components of the fit and additional information about the fit, and an optional figure for the plot.
+    #         A tuple containing a dictionary of evaluated components of the fit and additional
+    #         information about the fit, and an optional figure for the plot.
 
     # """
     if isinstance(main_model, FittingModel):
@@ -495,7 +499,8 @@ def force_peak_finder(
     # Parameters:
     # - peaks (dict): A dictionary containing peak information.
     #                 It should have the keys 'peaks' and 'data'.
-    #                 'peaks' should contain a list of dictionaries with keys 'Initial index', 'Index', and 'Ending index'.
+    #                 'peaks' should contain a list of dictionaries with keys 'Initial index', 'Index',
+    #                  and 'Ending index'.
     #                 'data' should contain arrays 'x' and 'y'.
 
     # Returns:
@@ -517,13 +522,13 @@ def force_peak_finder(
     y_array_p = gaussian_filter1d(y_array_p, 5)
     y_array_pp = gaussian_filter1d(y_array_pp, 5)
 
-    maxx = [main_peak_r_index]
-    minn = [main_peak_i_index, main_peak_f_index]
+    # maxx = [main_peak_r_index]
+    # minn = [main_peak_i_index, main_peak_f_index]
     # Find local maxima and minima of derivatives
     max_p = signal.argrelmax(y_array_p)[0]
     min_p = signal.argrelmin(y_array_p)[0]
     max_pp = signal.argrelmax(y_array_pp)[0]
-    min_pp = signal.argrelmin(y_array_pp)[0]
+    # min_pp = signal.argrelmin(y_array_pp)[0]
 
     # main_peak_i_index = peaks["i_index"]
     # main_peak_r_index = peaks["index"]
@@ -579,7 +584,12 @@ def force_peak_finder(
     return peak_properties_list
 
 
-@NodeDecorator(id="span.basics.peaks.plot", name="Plot peaks")
+@NodeDecorator(
+    id="span.basics.peaks.plot",
+    name="Plot peaks",
+    default_render_options={"data": {"src": "figure"}},
+    outputs=[{"name": "figure"}],
+)
 def plot_peaks(
     x_array: np.array, y_array: np.array, peaks_dict: List[PeakProperties]
 ) -> go.Figure:
@@ -701,7 +711,8 @@ def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     fig.update_yaxes(title_text="Baseline corrected", secondary_y=True)
     fig.update_layout(
         title={
-            "text": f"{peak['fitting_info']['model_name']} model with fitting score = {np.round(peak['fitting_info']['rsquared'], 4)}",
+            "text": f"{peak['fitting_info']['model_name']} model with fitting "
+            "score = {np.round(peak['fitting_info']['rsquared'], 4)}",
             "x": 0.5,  # Center the title
             "xanchor": "center",
         },
