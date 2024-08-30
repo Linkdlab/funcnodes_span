@@ -1,26 +1,33 @@
 [tool.poetry]
 name = "funcnodes-span"
-version = "0.1.17"
+version = "0.1.18"
 description = ""
 authors = ["Kourosh Rezaei <kouroshrezaei90@gmail.com>"]
 readme = "README.md"
 homepage = "https://linkdlab.de/"
 repository = "https://github.com/kouroshrezaei/funcnodes_span"
 [tool.poetry.dependencies]
-python = "^3.11"
-scipy = "^1.14.0"
-lmfit = "^1.3.2"
+python = ">=3.11"
+scipy = "*"
+lmfit = "*"
 funcnodes = "*"
 funcnodes_numpy = "*"
 funcnodes_pandas = "*"
 funcnodes_plotly = "*"
 
-pooch = "^1.8.2"
+funcnodes-core = ">=0.1.3"
 
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3.2"
+pytest = "*"
+pre-commit = "*"
+funcnodes-module = "*"
+pooch = "*"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.plugins."funcnodes.module"]
+module = "funcnodes_span"
+shelf = "funcnodes_span:NODE_SHELF"
