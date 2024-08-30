@@ -2,7 +2,7 @@ from funcnodes import NodeDecorator, Shelf
 import numpy as np
 from enum import Enum
 from exposedfunctionality import controlled_wrapper
-from typing import Optional, TypedDict, List, Tuple
+from typing import Optional, List, Tuple
 from scipy.signal import find_peaks
 from scipy.stats import norm
 from scipy import signal, interpolate
@@ -12,9 +12,11 @@ import lmfit
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import re
+from dataclasses import dataclass
 
 
-class PeakProperties(TypedDict):
+@dataclass
+class PeakProperties:
     id: str
     i_index: int
     index: int
@@ -154,28 +156,30 @@ def compute_peak_properties(
     width = x_array[f_index] - x_array[i_index]
 
     # Populate the PeakProperties dictionary
-    peak_properties: PeakProperties = {
-        "id": str(peak_nr + 1) + "_fitted" if is_fitted else str(peak_nr + 1),
-        "i_index": i_index,
-        "index": index,
-        "f_index": f_index,
-        "x_at_i_index": x_array[i_index],
-        "x_at_index": x_array[index],
-        "x_at_f_index": x_array[f_index],
-        "y_at_i_index": y_array[i_index],
-        "y_at_index": y_array[index],
-        "y_at_f_index": y_array[f_index],
-        "area": area,
-        "symmetricity": symmetricity,
-        "tailing": tailing,
-        "FWHM": FWHM,
-        "plate_nr": plate_nr,
-        "width": width,
-        "_is_fitted": is_fitted,
-        "_is_force_fitted": is_force_fitted,
-        "fitting_data": fitting_data,
-        "fitting_info": fitting_info,
-    }
+    peak_properties: PeakProperties = PeakProperties(
+        **{
+            "id": str(peak_nr + 1) + "_fitted" if is_fitted else str(peak_nr + 1),
+            "i_index": i_index,
+            "index": index,
+            "f_index": f_index,
+            "x_at_i_index": x_array[i_index],
+            "x_at_index": x_array[index],
+            "x_at_f_index": x_array[f_index],
+            "y_at_i_index": y_array[i_index],
+            "y_at_index": y_array[index],
+            "y_at_f_index": y_array[f_index],
+            "area": area,
+            "symmetricity": symmetricity,
+            "tailing": tailing,
+            "FWHM": FWHM,
+            "plate_nr": plate_nr,
+            "width": width,
+            "_is_fitted": is_fitted,
+            "_is_force_fitted": is_force_fitted,
+            "fitting_data": fitting_data,
+            "fitting_info": fitting_info,
+        }
+    )
 
     return peak_properties
 
@@ -196,8 +200,17 @@ def peak_finder(
     plateau_size: Optional[int] = None,
 ) -> dict:
     peak_lst = []
-    x_array = np.array(x_array)
-    y_array = np.array(y_array)
+    x_array = np.array(x_array, dtype=float)
+    y_array = np.array(y_array, dtype=float)
+    noise_level = int(noise_level) if noise_level is not None else None
+    height = float(height) if height is not None else None
+    threshold = float(threshold) if threshold is not None else None
+    distance = float(distance) if distance is not None else None
+    prominence = float(prominence) if prominence is not None else None
+    width = float(width) if width is not None else None
+    wlen = int(wlen) if wlen is not None else None
+    rel_height = float(rel_height)
+    plateau_size = int(plateau_size) if plateau_size is not None else None
 
     height = 0.05 * np.max(y_array) if height is None else height
     noise_level = 5000 if noise_level is None else noise_level
@@ -388,6 +401,10 @@ def fit_1D(
     #         information about the fit, and an optional figure for the plot.
 
     # """
+
+    x_array = np.array(x_array)
+    y_array = np.array(y_array)
+
     if isinstance(main_model, FittingModel):
         main_model = main_model.value
     if isinstance(baseline_model, BaselineModel):
@@ -397,8 +414,8 @@ def fit_1D(
     x = x_array
     # if is_sturated:
 
-    lowest_index = min(dictionary["i_index"] for dictionary in peaks)
-    highest_index = max(dictionary["f_index"] for dictionary in peaks)
+    lowest_index = min(dictionary.i_index for dictionary in peaks)
+    highest_index = max(dictionary.f_index for dictionary in peaks)
     knots = np.concatenate((x[:lowest_index], x[highest_index:]))
     if len(knots) > 300:
         knots = np.sort(np.random.choice(knots, size=300, replace=False))
@@ -418,14 +435,12 @@ def fit_1D(
         model = fitting_model(prefix=f"peak{index+1}_")
         pars.update(model.make_params())
         pars[f"peak{index+1}_center"].set(
-            value=x[peak["index"]],
-            min=x[peak["i_index"]],
-            max=x[peak["f_index"]],
+            value=x[peak.index],
+            min=x[peak.i_index],
+            max=x[peak.f_index],
         )
-        pars[f"peak{index+1}_sigma"].set(
-            value=(x[peak["f_index"]] - x[peak["i_index"]]) / 2
-        )
-        pars[f"peak{index+1}_amplitude"].set(value=y[peak["index"]], min=0)
+        pars[f"peak{index+1}_sigma"].set(value=(x[peak.f_index] - x[peak.i_index]) / 2)
+        pars[f"peak{index+1}_amplitude"].set(value=y[peak.index], min=0)
 
         if main_model == "Exponential Gaussian" or main_model == "Skewed Gaussian":
             pars[f"peak{index+1}_gamma"].set(value=1)
@@ -441,12 +456,10 @@ def fit_1D(
         pars.update(model.make_params())
         pars[f"peak{index+1}_center"].set(
             value=out.__dict__["best_values"][f"peak{index+1}_center"],
-            min=x[peak["i_index"]],
-            max=x[peak["f_index"]],
+            min=x[peak.i_index],
+            max=x[peak.f_index],
         )
-        pars[f"peak{index+1}_sigma"].set(
-            value=(x[peak["f_index"]] - x[peak["i_index"]]) / 2
-        )
+        pars[f"peak{index+1}_sigma"].set(value=(x[peak.f_index] - x[peak.i_index]) / 2)
         pars[f"peak{index+1}_amplitude"].set(
             value=out.__dict__["best_values"][f"peak{index+1}_amplitude"], min=0
         )
@@ -510,9 +523,9 @@ def force_peak_finder(
         raise ValueError("This method accepts one and only one main peak as an input.")
 
     peaks = copy.deepcopy(basic_peaks[0])
-    main_peak_i_index = peaks["i_index"]
-    main_peak_r_index = peaks["index"]
-    main_peak_f_index = peaks["f_index"]
+    main_peak_i_index = peaks.i_index
+    main_peak_r_index = peaks.index
+    main_peak_f_index = peaks.f_index
     y_array = y
     x_array = x
     # Calculate first and second derivatives
@@ -530,9 +543,9 @@ def force_peak_finder(
     max_pp = signal.argrelmax(y_array_pp)[0]
     # min_pp = signal.argrelmin(y_array_pp)[0]
 
-    # main_peak_i_index = peaks["i_index"]
-    # main_peak_r_index = peaks["index"]
-    # main_peak_f_index = peaks["f_index"]
+    # main_peak_i_index = peaks.i_index
+    # main_peak_r_index = peaks.index
+    # main_peak_f_index = peaks.f_index
 
     # Determine which peak is on the left and right side of the main peak
     if (
@@ -605,9 +618,9 @@ def plot_peaks(
 
     # Add rectangle shapes for each peak
     for index, peak in enumerate(peaks_dict):
-        initial_idx = peak["i_index"]
-        ending_idx = peak["f_index"]
-        peak_height = peak["y_at_index"]
+        initial_idx = peak.i_index
+        ending_idx = peak.f_index
+        peak_height = peak.y_at_index
         plot_y_min = min(y_array[initial_idx], y_array[ending_idx])
 
         # Create a scatter trace that simulates a rectangle
@@ -625,7 +638,7 @@ def plot_peaks(
                 opacity=0.3,
                 line=dict(width=0),
                 mode="lines",
-                name=f"Peak {peak['id']}",
+                name=f"Peak {peak.id}",
             )
         )
 
@@ -653,16 +666,21 @@ color_map = {
 }
 
 
-@NodeDecorator(id="span.basics.fit.plot", name="Plot fit 1D")
+@NodeDecorator(
+    id="span.basics.fit.plot",
+    name="Plot fit 1D",
+    default_render_options={"data": {"src": "figure"}},
+    outputs=[{"name": "figure"}],
+)
 def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     peak = peaks[0]
-    if not peak["_is_fitted"]:
+    if not peak._is_fitted:
         raise ValueError("No fitting information is available.")
 
-    x = peak["fitting_info"]["userkws"]["x"]
+    x = peak.fitting_info["userkws"]["x"]
     # Extract data from peaks
-    y = peak["fitting_info"]["data"]
-    best_fit = peak["fitting_info"]["best_fit"]
+    y = peak.fitting_info["data"]
+    best_fit = peak.fitting_info["best_fit"]
 
     # Create a subplot with 1 row, 1 column, and a secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -688,7 +706,7 @@ def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     )
 
     # Add the baseline and individual peak traces
-    for key in peak["fitting_data"].keys():
+    for key in peak.fitting_data.keys():
         if key == "baseline":
             color = color_map["C2"]
         else:
@@ -699,7 +717,7 @@ def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
 
         trace = go.Scatter(
             x=x,
-            y=peak["fitting_data"][key],
+            y=peak.fitting_data[key],
             mode="lines",
             name=key,
             line=dict(color=color),
@@ -711,8 +729,8 @@ def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     fig.update_yaxes(title_text="Baseline corrected", secondary_y=True)
     fig.update_layout(
         title={
-            "text": f"{peak['fitting_info']['model_name']} model with fitting "
-            "score = {np.round(peak['fitting_info']['rsquared'], 4)}",
+            "text": f"{peak.fitting_info['model_name']} model with fitting "
+            f"score = {np.round(peak.fitting_info['rsquared'], 4)}",
             "x": 0.5,  # Center the title
             "xanchor": "center",
         },
