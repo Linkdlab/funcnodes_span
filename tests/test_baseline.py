@@ -42,6 +42,18 @@ from funcnodes_span.baseline import (
     _pspline_iasls,
     _pspline_mpls,
     _pspline_psalsa,
+    _ipsa,
+    _noise_median,
+    _ria,
+    _snip,
+    _swima,
+    _cwt_br,
+    _dietrich,
+    _fabc,
+    _fastchrom,
+    _golotvin,
+    _rubberband,
+    _std_distribution,
 )
 
 
@@ -543,6 +555,154 @@ class TestBaselineSpline(unittest.IsolatedAsyncioTestCase):
 
     async def test_pspline_psalsa(self):
         bl: fn.Node = _pspline_psalsa()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+
+class TestBaselineSmoothing(unittest.IsolatedAsyncioTestCase):
+    async def test_ipsa(self):
+        bl: fn.Node = _ipsa()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_noise_median(self):
+        bl: fn.Node = _noise_median()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_ria(self):
+        bl: fn.Node = _ria()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_snip(self):
+        bl: fn.Node = _snip()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_swima(self):
+        bl: fn.Node = _swima()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+
+class TestBaselineClassification(unittest.IsolatedAsyncioTestCase):
+    async def test_cwt_br(self):
+        bl: fn.Node = _cwt_br()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_dietrich(self):
+        bl: fn.Node = _dietrich()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_fabc(self):
+        bl: fn.Node = _fabc()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_fastchrom(self):
+        bl: fn.Node = _fastchrom()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_golotvin(self):
+        bl: fn.Node = _golotvin()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_rubberband(self):
+        bl: fn.Node = _rubberband()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_std_distribution(self):
+        bl: fn.Node = _std_distribution()
         bl.inputs["data"].value = y
         self.assertIsInstance(bl, fn.Node)
         await bl
