@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "funcnodes-span"
-version = "0.1.22"
+version = "0.2.0"
 description = ""
 authors = ["Kourosh Rezaei <kouroshrezaei90@gmail.com>"]
 readme = "README.md"

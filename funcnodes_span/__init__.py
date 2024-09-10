@@ -5,7 +5,7 @@ from .smoothing import SMOOTH_NODE_SHELF as SMOOTH
 from .peak_analysis import PEAKS_NODE_SHELF as PEAK
 from .baseline import BASELINE_NODE_SHELF as BASELINE
 
-__version__ = "0.1.22"
+__version__ = "0.2.0"
 
 NODE_SHELF = fn.Shelf(
     name="Spectral Analysis",
