@@ -638,6 +638,325 @@ WHITTAKER_NODE_SHELF = Shelf(
     description="Fits a Whittaker baseline",
 )
 
+
+@NodeDecorator(
+    "pybaselines.morphological.amormol",
+    name="amormol",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.morphological.amormol, wrapper_attribute="__fnwrapped__"
+)
+def _amormol(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    tol: float = 1e-3,
+    max_iter: int = 200,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.amormol(
+        data, x_data=x_data, max_iter=max_iter, tol=tol, half_window=half_window
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.morphological.imor",
+    name="imor",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.morphological.imor, wrapper_attribute="__fnwrapped__")
+def _imor(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    tol: float = 1e-3,
+    max_iter: int = 200,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.imor(
+        data, x_data=x_data, max_iter=max_iter, tol=tol, half_window=half_window
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.morphological.jbcd",
+    name="jbcd",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.morphological.jbcd, wrapper_attribute="__fnwrapped__")
+def _jbcd(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    alpha: float = 0.1,
+    beta: float = 10.0,
+    gamma: float = 1.0,
+    beta_mult: float = 1.1,
+    gamma_mult: float = 0.909,
+    diff_order: int = 1,
+    tol: float = 1e-2,
+    tol_2: float = 1e-3,
+    max_iter: int = 20,
+    robust_opening: bool = True,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.jbcd(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        tol=tol,
+        half_window=half_window,
+        alpha=alpha,
+        beta=beta,
+        gamma=gamma,
+        beta_mult=beta_mult,
+        gamma_mult=gamma_mult,
+        diff_order=diff_order,
+        tol_2=tol_2,
+        robust_opening=robust_opening,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.morphological.mor",
+    name="mor",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.morphological.mor, wrapper_attribute="__fnwrapped__")
+def _mor(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.mor(
+        data, x_data=x_data, half_window=half_window
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.morphological.mormol",
+    name="mormol",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.morphological.mormol, wrapper_attribute="__fnwrapped__")
+def _mormol(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    tol: float = 1e-3,
+    max_iter: int = 200,
+    smooth_half_window: Optional[int] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.mormol(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        tol=tol,
+        half_window=half_window,
+        smooth_half_window=smooth_half_window,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.morphological.mpls",
+    name="mpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.morphological.mpls, wrapper_attribute="__fnwrapped__")
+def _mpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    lam: float = 1000000.0,
+    p: float = 0.0,
+    diff_order: int = 2,
+    tol: float = 1e-3,
+    max_iter: int = 50,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.mpls(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        tol=tol,
+        half_window=half_window,
+        lam=lam,
+        p=p,
+        diff_order=diff_order,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.morphological.mpspline",
+    name="mpspline",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.morphological.mpspline, wrapper_attribute="__fnwrapped__"
+)
+def _mpspline(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    lam: float = 10000.0,
+    lam_smooth: float = 0.01,
+    p: float = 0.0,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.mpspline(
+        data,
+        x_data=x_data,
+        half_window=half_window,
+        lam=lam,
+        lam_smooth=lam_smooth,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        p=p,
+        diff_order=diff_order,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.morphological.mwmv",
+    name="mwmv",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.morphological.mwmv, wrapper_attribute="__fnwrapped__")
+def _mwmv(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    smooth_half_window: Optional[int] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.mwmv(
+        data,
+        x_data=x_data,
+        smooth_half_window=smooth_half_window,
+        half_window=half_window,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.morphological.rolling_ball",
+    name="rolling_ball",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.morphological.rolling_ball, wrapper_attribute="__fnwrapped__"
+)
+def _rolling_ball(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    smooth_half_window: Optional[int] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.rolling_ball(
+        data,
+        x_data=x_data,
+        smooth_half_window=smooth_half_window,
+        half_window=half_window,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.morphological.tophat",
+    name="tophat",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.morphological.tophat, wrapper_attribute="__fnwrapped__")
+def _tophat(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.morphological.tophat(
+        data,
+        x_data=x_data,
+        half_window=half_window,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+MORPHOLOGICAL_NODE_SHELF = Shelf(
+    nodes=[
+        _amormol,
+        _imor,
+        _jbcd,
+        _mor,
+        _mormol,
+        _mpls,
+        _mpspline,
+        _mwmv,
+        _rolling_ball,
+        _tophat,
+    ],
+    subshelves=[],
+    name="Morphological",
+    description="Fits a morphological baseline",
+)
+
 BASELINE_NODE_SHELF = Shelf(
     nodes=[],
     subshelves=[POLYNOMIAL_NODE_SHELF, WHITTAKER_NODE_SHELF],

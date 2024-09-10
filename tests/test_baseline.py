@@ -19,6 +19,16 @@ from funcnodes_span.baseline import (
     _iarpls,
     _iasls,
     _psalsa,
+    _amormol,
+    _imor,
+    _jbcd,
+    _mor,
+    _mormol,
+    _mpls,
+    _mpspline,
+    _mwmv,
+    _rolling_ball,
+    _tophat,
 )
 
 
@@ -241,6 +251,128 @@ class TestBaselineWhittaker(unittest.IsolatedAsyncioTestCase):
         bl: fn.Node = _psalsa()
         bl.inputs["data"].value = y
         bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+
+class TestBaselineMorphological(unittest.IsolatedAsyncioTestCase):
+    async def test_amormol(self):
+        bl: fn.Node = _amormol()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_imor(self):
+        bl: fn.Node = _imor()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_jbcd(self):
+        bl: fn.Node = _jbcd()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_mor(self):
+        bl: fn.Node = _mor()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_mormol(self):
+        bl: fn.Node = _mormol()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_mpls(self):
+        bl: fn.Node = _mpls()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_mpspline(self):
+        bl: fn.Node = _mpspline()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_mwmv(self):
+        bl: fn.Node = _mwmv()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_rolling_ball(self):
+        bl: fn.Node = _rolling_ball()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_tophat(self):
+        bl: fn.Node = _tophat()
+        bl.inputs["data"].value = y
         self.assertIsInstance(bl, fn.Node)
         await bl
         baseline_corrected = bl.outputs["baseline_corrected"]
