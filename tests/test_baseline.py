@@ -54,6 +54,10 @@ from funcnodes_span.baseline import (
     _golotvin,
     _rubberband,
     _std_distribution,
+    _adaptive_minmax,
+    _collab_pls,
+    _custom_bc,
+    _optimize_extended_range,
 )
 
 
@@ -703,6 +707,56 @@ class TestBaselineClassification(unittest.IsolatedAsyncioTestCase):
 
     async def test_std_distribution(self):
         bl: fn.Node = _std_distribution()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+
+class TestBaselineOptimizers(unittest.IsolatedAsyncioTestCase):
+    async def test_adaptive_minmax(self):
+        bl: fn.Node = _adaptive_minmax()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_collab_pls(self):
+        bl: fn.Node = _collab_pls()
+        bl.inputs["data"].value = np.tile(y, (4, 1))
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_custom_bc(self):
+        bl: fn.Node = _custom_bc()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_optimize_extended_range(self):
+        bl: fn.Node = _optimize_extended_range()
         bl.inputs["data"].value = y
         self.assertIsInstance(bl, fn.Node)
         await bl
