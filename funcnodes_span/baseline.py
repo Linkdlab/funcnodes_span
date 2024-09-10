@@ -957,9 +957,537 @@ MORPHOLOGICAL_NODE_SHELF = Shelf(
     description="Fits a morphological baseline",
 )
 
+
+@NodeDecorator(
+    "pybaselines.spline.corner_cutting",
+    name="corner_cutting",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.spline.corner_cutting, wrapper_attribute="__fnwrapped__"
+)
+def _corner_cutting(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    max_iter: int = 100,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.corner_cutting(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.irsqr",
+    name="irsqr",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.spline.irsqr, wrapper_attribute="__fnwrapped__")
+def _irsqr(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    quantile: float = 0.05,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 3,
+    max_iter: int = 100,
+    tol: float = 1e-6,
+    weights: Optional[np.ndarray] = None,
+    eps: Optional[float] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.irsqr(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        quantile=quantile,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+        eps=eps,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.mixture_model",
+    name="mixture_model",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.spline.mixture_model, wrapper_attribute="__fnwrapped__")
+def _mixture_model(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 100000.0,
+    p: float = 0.01,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 3,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+    symmetric: bool = False,
+    num_bins: Optional[int] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.mixture_model(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        p=p,
+        symmetric=symmetric,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+        num_bins=num_bins,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_airpls",
+    name="pspline_airpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.spline.pspline_airpls, wrapper_attribute="__fnwrapped__"
+)
+def _pspline_airpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000.0,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_airpls(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_arpls",
+    name="pspline_arpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.spline.pspline_arpls, wrapper_attribute="__fnwrapped__")
+def _pspline_arpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000.0,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_arpls(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_asls",
+    name="pspline_asls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.spline.pspline_asls, wrapper_attribute="__fnwrapped__")
+def _pspline_asls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000.0,
+    p: float = 0.01,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_asls(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        num_knots=num_knots,
+        p=p,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_aspls",
+    name="pspline_aspls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.spline.pspline_aspls, wrapper_attribute="__fnwrapped__")
+def _pspline_aspls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 10000.0,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 100,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+    alpha: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_aspls(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+        alpha=alpha,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_derpsalsa",
+    name="pspline_derpsalsa",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.spline.pspline_derpsalsa, wrapper_attribute="__fnwrapped__"
+)
+def _pspline_derpsalsa(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 100.0,
+    p: float = 0.01,
+    k: Optional[float] = None,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+    smooth_half_window: Optional[int] = None,
+    num_smooths: int = 16,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_derpsalsa(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        p=p,
+        k=k,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+        smooth_half_window=smooth_half_window,
+        num_smooths=num_smooths,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_drpls",
+    name="pspline_drpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.spline.pspline_drpls, wrapper_attribute="__fnwrapped__")
+def _pspline_drpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000.0,
+    eta: float = 0.5,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_drpls(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        eta=eta,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_iarpls",
+    name="pspline_iarpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.spline.pspline_iarpls, wrapper_attribute="__fnwrapped__"
+)
+def _pspline_iarpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000.0,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_iarpls(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_iasls",
+    name="pspline_iasls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.spline.pspline_iasls, wrapper_attribute="__fnwrapped__")
+def _pspline_iasls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 10.0,
+    p: float = 0.01,
+    lam_1: float = 0.0001,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_iasls(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        p=p,
+        lam_1=lam_1,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_mpls",
+    name="pspline_mpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.spline.pspline_mpls, wrapper_attribute="__fnwrapped__")
+def _pspline_mpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    lam: float = 1000.0,
+    p: float = 0.0,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_mpls(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        p=p,
+        half_window=half_window,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.spline.pspline_psalsa",
+    name="pspline_psalsa",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.spline.pspline_psalsa, wrapper_attribute="__fnwrapped__"
+)
+def _pspline_psalsa(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000.0,
+    p: float = 0.5,
+    k: Optional[float] = None,
+    num_knots: int = 100,
+    spline_degree: int = 3,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.spline.pspline_psalsa(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        lam=lam,
+        p=p,
+        k=k,
+        num_knots=num_knots,
+        spline_degree=spline_degree,
+        diff_order=diff_order,
+        tol=tol,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+SPLINE_NODE_SHELF = Shelf(
+    nodes=[
+        _corner_cutting,
+        _irsqr,
+        _mixture_model,
+        _pspline_airpls,
+        _pspline_arpls,
+        _pspline_asls,
+        _pspline_aspls,
+        _pspline_derpsalsa,
+        _pspline_drpls,
+        _pspline_iarpls,
+        _pspline_iasls,
+        _pspline_mpls,
+        _pspline_psalsa,
+    ],
+    subshelves=[],
+    name="Spline",
+    description="Fits a spline baseline",
+)
+
+
 BASELINE_NODE_SHELF = Shelf(
     nodes=[],
-    subshelves=[POLYNOMIAL_NODE_SHELF, WHITTAKER_NODE_SHELF],
+    subshelves=[
+        POLYNOMIAL_NODE_SHELF,
+        WHITTAKER_NODE_SHELF,
+        MORPHOLOGICAL_NODE_SHELF,
+        SPLINE_NODE_SHELF,
+    ],
     name="Baseline correction",
     description="Provides different techniques for fitting baselines to experimental data using pybaselines.",
 )
