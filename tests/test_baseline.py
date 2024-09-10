@@ -29,6 +29,19 @@ from funcnodes_span.baseline import (
     _mwmv,
     _rolling_ball,
     _tophat,
+    _corner_cutting,
+    _irsqr,
+    _mixture_model,
+    _pspline_airpls,
+    _pspline_arpls,
+    _pspline_asls,
+    _pspline_aspls,
+    _pspline_derpsalsa,
+    _pspline_drpls,
+    _pspline_iarpls,
+    _pspline_iasls,
+    _pspline_mpls,
+    _pspline_psalsa,
 )
 
 
@@ -372,6 +385,164 @@ class TestBaselineMorphological(unittest.IsolatedAsyncioTestCase):
 
     async def test_tophat(self):
         bl: fn.Node = _tophat()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+
+class TestBaselineSpline(unittest.IsolatedAsyncioTestCase):
+    async def test_corner_cutting(self):
+        bl: fn.Node = _corner_cutting()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_irsqr(self):
+        bl: fn.Node = _irsqr()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_mixture_model(self):
+        bl: fn.Node = _mixture_model()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_airpls(self):
+        bl: fn.Node = _pspline_airpls()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_arpls(self):
+        bl: fn.Node = _pspline_arpls()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_asls(self):
+        bl: fn.Node = _pspline_asls()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_aspls(self):
+        bl: fn.Node = _pspline_aspls()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_derpsalsa(self):
+        bl: fn.Node = _pspline_derpsalsa()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_drpls(self):
+        bl: fn.Node = _pspline_drpls()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_iarpls(self):
+        bl: fn.Node = _pspline_iarpls()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_iasls(self):
+        bl: fn.Node = _pspline_iasls()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_mpls(self):
+        bl: fn.Node = _pspline_mpls()
+        bl.inputs["data"].value = y
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_pspline_psalsa(self):
+        bl: fn.Node = _pspline_psalsa()
         bl.inputs["data"].value = y
         self.assertIsInstance(bl, fn.Node)
         await bl
