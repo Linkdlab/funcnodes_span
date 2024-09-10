@@ -312,305 +312,335 @@ POLYNOMIAL_NODE_SHELF = Shelf(
     description="Fits a polynomial baseline",
 )
 
+
+@NodeDecorator(
+    "pybaselines.whittaker.airpls",
+    name="airpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.whittaker.airpls, wrapper_attribute="__fnwrapped__")
+def _airpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000000.0,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.whittaker.airpls(
+        data,
+        x_data=x_data,
+        lam=lam,
+        max_iter=max_iter,
+        tol=tol,
+        weights=weights,
+        diff_order=diff_order,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.whittaker.arpls",
+    name="arpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.whittaker.arpls, wrapper_attribute="__fnwrapped__")
+def _arpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 100000.0,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.whittaker.arpls(
+        data,
+        x_data=x_data,
+        lam=lam,
+        max_iter=max_iter,
+        tol=tol,
+        weights=weights,
+        diff_order=diff_order,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.whittaker.asls",
+    name="asls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.whittaker.asls, wrapper_attribute="__fnwrapped__")
+def _asls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000000.0,
+    p: float = 0.01,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.whittaker.asls(
+        data,
+        x_data=x_data,
+        lam=lam,
+        p=p,
+        max_iter=max_iter,
+        tol=tol,
+        weights=weights,
+        diff_order=diff_order,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.whittaker.aspls",
+    name="aspls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.whittaker.aspls, wrapper_attribute="__fnwrapped__")
+def _aspls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 100000.0,
+    alpha: Optional[np.ndarray] = None,
+    diff_order: int = 2,
+    max_iter: int = 100,
+    tol: float = 1e-3,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.whittaker.aspls(
+        data,
+        x_data=x_data,
+        lam=lam,
+        alpha=alpha,
+        max_iter=max_iter,
+        tol=tol,
+        weights=weights,
+        diff_order=diff_order,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.whittaker.derpsalsa",
+    name="derpsalsa",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.whittaker.derpsalsa, wrapper_attribute="__fnwrapped__")
+def _derpsalsa(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000000.0,
+    p: float = 0.01,
+    k: Optional[float] = None,
+    diff_order: int = 2,
+    max_iter: int = 50,
+    weights: Optional[np.ndarray] = None,
+    smooth_half_window: Optional[int] = None,
+    num_smooths: int = 16,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.whittaker.derpsalsa(
+        data,
+        x_data=x_data,
+        lam=lam,
+        p=p,
+        max_iter=max_iter,
+        k=k,
+        weights=weights,
+        diff_order=diff_order,
+        smooth_half_window=smooth_half_window,
+        num_smooths=num_smooths,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.whittaker.drpls",
+    name="drpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.whittaker.drpls, wrapper_attribute="__fnwrapped__")
+def _drpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 100000.0,
+    eta: float = 0.5,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    diff_order: int = 2,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.whittaker.drpls(
+        data,
+        x_data=x_data,
+        lam=lam,
+        eta=eta,
+        max_iter=max_iter,
+        weights=weights,
+        diff_order=diff_order,
+        tol=tol,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.whittaker.iarpls",
+    name="iarpls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.whittaker.iarpls, wrapper_attribute="__fnwrapped__")
+def _iarpls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 100000.0,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    diff_order: int = 2,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.whittaker.iarpls(
+        data,
+        x_data=x_data,
+        lam=lam,
+        max_iter=max_iter,
+        weights=weights,
+        diff_order=diff_order,
+        tol=tol,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.whittaker.iasls",
+    name="iasls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.whittaker.iasls, wrapper_attribute="__fnwrapped__")
+def _iasls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 100000.0,
+    p: float = 0.5,
+    lam_1: float = 0.0001,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    diff_order: int = 2,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.whittaker.iasls(
+        data,
+        x_data=x_data,
+        lam=lam,
+        max_iter=max_iter,
+        lam_1=lam_1,
+        p=p,
+        weights=weights,
+        diff_order=diff_order,
+        tol=tol,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.whittaker.psalsa",
+    name="psalsa",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.whittaker.psalsa, wrapper_attribute="__fnwrapped__")
+def _psalsa(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 100000.0,
+    p: float = 0.5,
+    k: Optional[float] = None,
+    max_iter: int = 50,
+    tol: float = 1e-3,
+    diff_order: int = 2,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.whittaker.psalsa(
+        data,
+        x_data=x_data,
+        lam=lam,
+        max_iter=max_iter,
+        p=p,
+        k=k,
+        weights=weights,
+        diff_order=diff_order,
+        tol=tol,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+WHITTAKER_NODE_SHELF = Shelf(
+    nodes=[
+        _airpls,
+        _arpls,
+        _asls,
+        _aspls,
+        _derpsalsa,
+        _drpls,
+        _iarpls,
+        _iasls,
+        _psalsa,
+    ],
+    subshelves=[],
+    name="Whittaker",
+    description="Fits a Whittaker baseline",
+)
+
 BASELINE_NODE_SHELF = Shelf(
     nodes=[],
-    subshelves=[POLYNOMIAL_NODE_SHELF],
-    name="Baseline coorection",
+    subshelves=[POLYNOMIAL_NODE_SHELF, WHITTAKER_NODE_SHELF],
+    name="Baseline correction",
     description="Provides different techniques for fitting baselines to experimental data using pybaselines.",
 )
-# @NodeDecorator(
-#     "pybaselines.spline.corner_cutting",
-#     name="corner_cutting",
-#     outputs=[
-#         {"name": "baseline_corrected"},
-#         {"name": "baseline"},
-#         {"name": "params"},
-#     ],
-# )
-# @controlled_wrapper(
-#     pybaselines.spline.corner_cutting, wrapper_attribute="__fnwrapped__"
-# )
-# def _corner_cutting(
-#     data: np.ndarray,
-#     max_iter: Optional[int] = None,
-#     x_data: Optional[np.ndarray] = None,
-# ) -> Tuple[np.ndarray, dict]:
-#     baseline, params = pybaselines.spline.corner_cutting(
-#         data, x_data=x_data, max_iter=max_iter
-#     )
-#     baseline_corrected = data - baseline
-#     return baseline_corrected, baseline, params
-
-
-# @NodeDecorator(
-#     "pybaselines.spline.irsqr",
-#     name="irsqr",
-#     outputs=[
-#         {"name": "baseline_corrected"},
-#         {"name": "baseline"},
-#         {"name": "params"},
-#     ],
-# )
-# @controlled_wrapper(pybaselines.spline.irsqr, wrapper_attribute="__fnwrapped__")
-# def _irsqr(
-#     data: np.ndarray,
-#     lam: Optional[float] = None,
-#     quantile: Optional[float] = None,
-#     num_knots: Optional[int] = None,
-#     spline_degree: Optional[int] = None,
-#     diff_order: Optional[int] = None,
-#     max_iter: Optional[int] = None,
-#     tol: Optional[float] = None,
-#     weights: Optional[np.ndarray] = None,
-#     eps: Optional[float] = None,
-#     x_data: Optional[np.ndarray] = None,
-# ) -> Tuple[np.ndarray, dict]:
-#     baseline, params = pybaselines.spline.irsqr(
-#         data,
-#         lam=lam,
-#         quantile=quantile,
-#         num_knots=num_knots,
-#         spline_degree=spline_degree,
-#         diff_order=diff_order,
-#         max_iter=max_iter,
-#         tol=tol,
-#         weights=weights,
-#         eps=eps,
-#         x_data=x_data,
-#     )
-#     baseline_corrected = data - baseline
-#     return baseline_corrected, baseline, params
-
-
-# @NodeDecorator(
-#     "pybaselines.spline.mixture_model",
-#     name="mixture_model",
-#     outputs=[
-#         {"name": "baseline_corrected"},
-#         {"name": "baseline"},
-#         {"name": "params"},
-#     ],
-# )
-# @controlled_wrapper(pybaselines.spline.mixture_model, wrapper_attribute="__fnwrapped__")
-# def _mixture_model(
-#     data: np.ndarray,
-#     lam: Optional[float] = None,
-#     p: Optional[float] = None,
-#     num_knots: Optional[int] = None,
-#     spline_degree: Optional[int] = None,
-#     diff_order: Optional[int] = None,
-#     max_iter: Optional[int] = None,
-#     tol: Optional[float] = None,
-#     weights: Optional[np.ndarray] = None,
-#     symmetric: bool = False,
-#     x_data: Optional[np.ndarray] = None,
-# ) -> Tuple[np.ndarray, dict]:
-#     baseline, params = pybaselines.spline.mixture_model(
-#         data,
-#         lam=lam,
-#         p=p,
-#         num_knots=num_knots,
-#         spline_degree=spline_degree,
-#         diff_order=diff_order,
-#         max_iter=max_iter,
-#         tol=tol,
-#         weights=weights,
-#         symmetric=symmetric,
-#         x_data=x_data,
-#     )
-#     baseline_corrected = data - baseline
-#     return baseline_corrected, baseline, params
-
-
-# @NodeDecorator(
-#     "pybaselines.spline.pspline_airpls",
-#     name="pspline_airpls",
-#     outputs=[
-#         {"name": "baseline_corrected"},
-#         {"name": "baseline"},
-#         {"name": "params"},
-#     ],
-# )
-# @controlled_wrapper(
-#     pybaselines.spline.pspline_airpls, wrapper_attribute="__fnwrapped__"
-# )
-# def _pspline_airpls(
-#     data: np.ndarray,
-#     lam: Optional[float] = None,
-#     num_knots: Optional[int] = None,
-#     spline_degree: Optional[int] = None,
-#     diff_order: Optional[int] = None,
-#     max_iter: Optional[int] = None,
-#     tol: Optional[float] = None,
-#     weights: Optional[np.ndarray] = None,
-#     x_data: Optional[np.ndarray] = None,
-# ) -> Tuple[np.ndarray, dict]:
-#     baseline, params = pybaselines.spline.pspline_airpls(
-#         data,
-#         lam=lam,
-#         num_knots=num_knots,
-#         spline_degree=spline_degree,
-#         diff_order=diff_order,
-#         max_iter=max_iter,
-#         tol=tol,
-#         weights=weights,
-#         x_data=x_data,
-#     )
-#     baseline_corrected = data - baseline
-#     return baseline_corrected, baseline, params
-
-
-# @NodeDecorator(
-#     "pybaselines.spline.pspline_arpls",
-#     name="pspline_arpls",
-#     outputs=[
-#         {"name": "baseline_corrected"},
-#         {"name": "baseline"},
-#         {"name": "params"},
-#     ],
-# )
-# @controlled_wrapper(pybaselines.spline.pspline_arpls, wrapper_attribute="__fnwrapped__")
-# def _pspline_arpls(
-#     data: np.ndarray,
-#     lam: Optional[float] = None,
-#     num_knots: Optional[int] = None,
-#     spline_degree: Optional[int] = None,
-#     diff_order: Optional[int] = None,
-#     max_iter: Optional[int] = None,
-#     tol: Optional[float] = None,
-#     weights: Optional[np.ndarray] = None,
-#     x_data: Optional[np.ndarray] = None,
-# ) -> Tuple[np.ndarray, dict]:
-#     baseline, params = pybaselines.spline.pspline_arpls(
-#         data,
-#         lam=lam,
-#         num_knots=num_knots,
-#         spline_degree=spline_degree,
-#         diff_order=diff_order,
-#         max_iter=max_iter,
-#         tol=tol,
-#         weights=weights,
-#         x_data=x_data,
-#     )
-#     baseline_corrected = data - baseline
-#     return baseline_corrected, baseline, params
-
-
-# @NodeDecorator(
-#     "pybaselines.spline.pspline_asls",
-#     name="pspline_asls",
-#     outputs=[
-#         {"name": "baseline_corrected"},
-#         {"name": "baseline"},
-#         {"name": "params"},
-#     ],
-# )
-# @controlled_wrapper(pybaselines.spline.pspline_asls, wrapper_attribute="__fnwrapped__")
-# def _pspline_asls(
-#     data: np.ndarray,
-#     lam: Optional[float] = None,
-#     p: Optional[float] = None,
-#     num_knots: Optional[int] = None,
-#     spline_degree: Optional[int] = None,
-#     diff_order: Optional[int] = None,
-#     max_iter: Optional[int] = None,
-#     tol: Optional[float] = None,
-#     weights: Optional[np.ndarray] = None,
-#     x_data: Optional[np.ndarray] = None,
-# ) -> Tuple[np.ndarray, dict]:
-#     baseline, params = pybaselines.spline.pspline_asls(
-#         data,
-#         lam=lam,
-#         p=p,
-#         num_knots=num_knots,
-#         spline_degree=spline_degree,
-#         diff_order=diff_order,
-#         max_iter=max_iter,
-#         tol=tol,
-#         weights=weights,
-#         x_data=x_data,
-#     )
-#     baseline_corrected = data - baseline
-#     return baseline_corrected, baseline, params
-
-
-# @NodeDecorator(
-#     "pybaselines.spline.pspline_aspls",
-#     name="pspline_aspls",
-#     outputs=[
-#         {"name": "baseline_corrected"},
-#         {"name": "baseline"},
-#         {"name": "params"},
-#     ],
-# )
-# @controlled_wrapper(pybaselines.spline.pspline_aspls, wrapper_attribute="__fnwrapped__")
-# def _pspline_aspls(
-#     data: np.ndarray,
-#     lam: Optional[float] = None,
-#     num_knots: Optional[int] = None,
-#     spline_degree: Optional[int] = None,
-#     diff_order: Optional[int] = None,
-#     max_iter: Optional[int] = None,
-#     tol: Optional[float] = None,
-#     weights: Optional[np.ndarray] = None,
-#     alpha: Optional[np.ndarray] = None,
-#     x_data: Optional[np.ndarray] = None,
-# ) -> Tuple[np.ndarray, dict]:
-#     baseline, params = pybaselines.spline.pspline_aspls(
-#         data,
-#         lam=lam,
-#         num_knots=num_knots,
-#         spline_degree=spline_degree,
-#         diff_order=diff_order,
-#         max_iter=max_iter,
-#         tol=tol,
-#         weights=weights,
-#         alpha=alpha,
-#         x_data=x_data,
-#     )
-#     baseline_corrected = data - baseline
-#     return baseline_corrected, baseline, params
-
-
-# @NodeDecorator(
-#     "pybaselines.spline.pspline_derpsalsa",
-#     name="pspline_derpsalsa",
-#     outputs=[
-#         {"name": "baseline_corrected"},
-#         {"name": "baseline"},
-#         {"name": "params"},
-#     ],
-# )
-# @controlled_wrapper(
-#     pybaselines.spline.pspline_derpsalsa, wrapper_attribute="__fnwrapped__"
-# )
-# def _pspline_derpsalsa(
-#     data: np.ndarray,
-#     lam: Optional[float] = None,
-#     p: Optional[float] = None,
-#     k: Optional[float] = None,
-#     num_knots: Optional[int] = None,
-#     spline_degree: Optional[int] = None,
-#     diff_order: Optional[int] = None,
-#     max_iter: Optional[int] = None,
-#     tol: Optional[float] = None,
-#     weights: Optional[np.ndarray] = None,
-#     smooth_half_window: Optional[int] = None,
-#     num_smooths: Optional[int] = None,
-#     x_data: Optional[np.ndarray] = None,
-# ) -> Tuple[np.ndarray, dict]:
-#     baseline, params = pybaselines.spline.pspline_derpsalsa(
-#         data,
-#         lam=lam,
-#         num_knots=num_knots,
-#         spline_degree=spline_degree,
-#         diff_order=diff_order,
-#         max_iter=max_iter,
-#         tol=tol,
-#         weights=weights,
-#         smooth_half_window=smooth_half_window,
-#         num_smooths=num_smooths,
-#         x_data=x_data,
-#     )
-#     baseline_corrected = data - baseline
-#     return baseline_corrected, baseline, params
