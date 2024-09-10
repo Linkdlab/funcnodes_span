@@ -2,7 +2,7 @@ from funcnodes import NodeDecorator, Shelf
 from exposedfunctionality import controlled_wrapper
 import numpy as np
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, List
 import pybaselines
 
 
@@ -1480,6 +1480,689 @@ SPLINE_NODE_SHELF = Shelf(
 )
 
 
+@NodeDecorator(
+    "pybaselines.smooth.ipsa",
+    name="ipsa",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.smooth.ipsa, wrapper_attribute="__fnwrapped__")
+def _ipsa(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    max_iter: int = 500,
+    tol: Optional[float] = None,
+    roi: Optional[np.ndarray] = None,
+    original_criteria: bool = False,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.smooth.ipsa(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        half_window=half_window,
+        roi=roi,
+        tol=tol,
+        original_criteria=original_criteria,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.smooth.noise_median",
+    name="noise_median",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.smooth.noise_median, wrapper_attribute="__fnwrapped__")
+def _noise_median(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    smooth_half_window: Optional[int] = None,
+    sigma: Optional[float] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.smooth.noise_median(
+        data,
+        x_data=x_data,
+        smooth_half_window=smooth_half_window,
+        half_window=half_window,
+        sigma=sigma,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+class Side(Enum):
+    both = "both"
+    left = "left"
+    right = "right"
+
+    @classmethod
+    def default(cls):
+        return cls.both.value
+
+
+@NodeDecorator(
+    "pybaselines.smooth.ria",
+    name="ria",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.smooth.ria, wrapper_attribute="__fnwrapped__")
+def _ria(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    max_iter: int = 500,
+    tol: float = 0.01,
+    side: Side = Side.default(),
+    width_scale: float = 0.1,
+    height_scale: float = 1.0,
+    sigma_scale: float = 1.0 / 12.0,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    if isinstance(side, Side):
+        side = side.value
+    baseline, params = pybaselines.smooth.ria(
+        data,
+        x_data=x_data,
+        max_iter=max_iter,
+        tol=tol,
+        half_window=half_window,
+        side=side,
+        width_scale=width_scale,
+        height_scale=height_scale,
+        sigma_scale=sigma_scale,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.smooth.snip",
+    name="snip",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.smooth.snip, wrapper_attribute="__fnwrapped__")
+def _snip(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    decreasing: bool = False,
+    smooth_half_window: Optional[int] = None,
+    filter_order: int = 2,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.smooth.snip(
+        data,
+        x_data=x_data,
+        decreasing=decreasing,
+        smooth_half_window=smooth_half_window,
+        filter_order=filter_order,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.smooth.swima",
+    name="swima",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.smooth.swima, wrapper_attribute="__fnwrapped__")
+def _swima(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    min_half_window: int = 3,
+    max_half_window: Optional[int] = None,
+    smooth_half_window: Optional[int] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.smooth.swima(
+        data,
+        x_data=x_data,
+        min_half_window=min_half_window,
+        smooth_half_window=smooth_half_window,
+        max_half_window=max_half_window,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+SMOOTH_NODE_SHELF = Shelf(
+    nodes=[_ipsa, _noise_median, _ria, _snip, _swima],
+    subshelves=[],
+    name="Smooth",
+    description="Fits a smooth baseline",
+)
+
+
+@NodeDecorator(
+    "pybaselines.classification.cwt_br",
+    name="cwt_br",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.classification.cwt_br, wrapper_attribute="__fnwrapped__"
+)
+def _cwt_br(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    poly_order: int = 5,
+    scale: Optional[np.ndarray] = None,
+    num_std: float = 1.0,
+    min_length: int = 2,
+    max_iter: int = 50,
+    tol: float = 0.001,
+    symmetric: bool = False,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.classification.cwt_br(
+        data,
+        x_data=x_data,
+        poly_order=poly_order,
+        scale=scale,
+        num_std=num_std,
+        min_length=min_length,
+        max_iter=max_iter,
+        tol=tol,
+        symmetric=symmetric,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.classification.dietrich",
+    name="dietrich",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.classification.dietrich, wrapper_attribute="__fnwrapped__"
+)
+def _dietrich(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    smooth_half_window: Optional[int] = None,
+    interp_half_window: int = 5,
+    poly_order: int = 5,
+    max_iter: int = 50,
+    tol: float = 0.001,
+    num_std: float = 1.0,
+    min_length: int = 2,
+    return_coef: bool = False,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.classification.dietrich(
+        data,
+        x_data=x_data,
+        poly_order=poly_order,
+        smooth_half_window=smooth_half_window,
+        num_std=num_std,
+        min_length=min_length,
+        max_iter=max_iter,
+        tol=tol,
+        interp_half_window=interp_half_window,
+        return_coef=return_coef,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.classification.fabc",
+    name="fabc",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.classification.fabc, wrapper_attribute="__fnwrapped__")
+def _fabc(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    lam: float = 1000000.0,
+    scale: Optional[np.ndarray] = None,
+    num_std: float = 3.0,
+    diff_order: int = 2,
+    min_length: int = 2,
+    weights_as_mask: bool = False,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.classification.fabc(
+        data,
+        x_data=x_data,
+        lam=lam,
+        scale=scale,
+        num_std=num_std,
+        min_length=min_length,
+        diff_order=diff_order,
+        weights_as_mask=weights_as_mask,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.classification.fastchrom",
+    name="fastchrom",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.classification.fastchrom, wrapper_attribute="__fnwrapped__"
+)
+def _fastchrom(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    threshold: Optional[float] = None,
+    min_fwhm: Optional[int] = None,
+    interp_half_window: int = 5,
+    smooth_half_window: Optional[int] = None,
+    max_iter: int = 100,
+    min_length: int = 2,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.classification.fastchrom(
+        data,
+        x_data=x_data,
+        half_window=half_window,
+        threshold=threshold,
+        min_fwhm=min_fwhm,
+        min_length=min_length,
+        max_iter=max_iter,
+        smooth_half_window=smooth_half_window,
+        interp_half_window=interp_half_window,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.classification.golotvin",
+    name="golotvin",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.classification.golotvin, wrapper_attribute="__fnwrapped__"
+)
+def _golotvin(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    num_std: float = 2.0,
+    sections: int = 32,
+    threshold: Optional[float] = None,
+    interp_half_window: int = 5,
+    smooth_half_window: Optional[int] = None,
+    min_length: int = 2,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.classification.golotvin(
+        data,
+        x_data=x_data,
+        half_window=half_window,
+        threshold=threshold,
+        num_std=num_std,
+        min_length=min_length,
+        sections=sections,
+        smooth_half_window=smooth_half_window,
+        interp_half_window=interp_half_window,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.classification.rubberband",
+    name="rubberband",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.classification.rubberband, wrapper_attribute="__fnwrapped__"
+)
+def _rubberband(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    segments: Union[int, np.ndarray] = 1,
+    lam: Optional[float] = None,
+    diff_order: int = 2,
+    smooth_half_window: Optional[int] = None,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.classification.rubberband(
+        data,
+        x_data=x_data,
+        segments=segments,
+        lam=lam,
+        diff_order=diff_order,
+        smooth_half_window=smooth_half_window,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.classification.std_distribution",
+    name="std_distribution",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.classification.std_distribution, wrapper_attribute="__fnwrapped__"
+)
+def _std_distribution(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    half_window: Optional[int] = None,
+    interp_half_window: int = 5,
+    fill_half_window: int = 3,
+    num_std: float = 1.1,
+    smooth_half_window: Optional[int] = None,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    baseline, params = pybaselines.classification.std_distribution(
+        data,
+        x_data=x_data,
+        half_window=half_window,
+        interp_half_window=interp_half_window,
+        fill_half_window=fill_half_window,
+        smooth_half_window=smooth_half_window,
+        num_std=num_std,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+CLASSIFICATION_NODE_SHELF = Shelf(
+    nodes=[
+        _cwt_br,
+        _dietrich,
+        _fabc,
+        _fastchrom,
+        _golotvin,
+        _rubberband,
+        _std_distribution,
+    ],
+    subshelves=[],
+    name="Classification",
+    description="Fits a classification baseline",
+)
+
+
+class Method(Enum):
+    modpoly = "modpoly"
+    imodpoly = "imodpoly"
+
+    @classmethod
+    def default(cls):
+        return cls.modpoly.value
+
+
+@NodeDecorator(
+    "pybaselines.optimizers.adaptive_minmax",
+    name="adaptive_minmax",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.optimizers.adaptive_minmax, wrapper_attribute="__fnwrapped__"
+)
+def _adaptive_minmax(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    poly_order: Optional[Union[int, List[int]]] = None,
+    method: Method = Method.default(),
+    constrained_fraction: Union[float, List[float]] = 0.01,
+    constrained_weight: Union[float, List[float]] = 100000.0,
+    estimation_poly_order: int = 2,
+    weights: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    if isinstance(method, Method):
+        method = method.value
+    baseline, params = pybaselines.optimizers.adaptive_minmax(
+        data,
+        x_data=x_data,
+        poly_order=poly_order,
+        constrained_fraction=constrained_fraction,
+        constrained_weight=constrained_weight,
+        method=method,
+        estimation_poly_order=estimation_poly_order,
+        weights=weights,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+class MethodColab(Enum):
+    airpls = "airpls"
+    arpls = "arpls"
+    asls = "asls"
+    aspls = "aspls"
+    derpsalsa = "derpsalsa"
+    drpls = "drpls"
+    iarpls = "iarpls"
+    iasls = "iasls"
+    psalsa = "psalsa"
+
+    @classmethod
+    def default(cls):
+        return cls.asls.value
+
+
+@NodeDecorator(
+    "pybaselines.optimizers.collab_pls",
+    name="collab_pls",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.optimizers.collab_pls, wrapper_attribute="__fnwrapped__"
+)
+def _collab_pls(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    average_dataset: bool = True,
+    method: MethodColab = MethodColab.default(),
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    if isinstance(method, MethodColab):
+        method = method.value
+    baseline, params = pybaselines.optimizers.collab_pls(
+        data,
+        x_data=x_data,
+        method=method,
+        average_dataset=average_dataset,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+class MethodAll(Enum):
+    goldindec = "goldindec"
+    imodpoly = "imodpoly"
+    loess = "loess"
+    modpoly = "modpoly"
+    penalizedpoly = "penalizedpoly"
+    poly = "poly"
+    quant_reg = "quant_reg"
+    airpls = "airpls"
+    arpls = "arpls"
+    asls = "asls"
+    aspls = "aspls"
+    derpsalsa = "derpsalsa"
+    drpls = "drpls"
+    iarpls = "iarpls"
+    iasls = "iasls"
+    psalsa = "psalsa"
+    amormol = "amormol"
+    imor = "imor"
+    jbcd = "jbcd"
+    mor = "mor"
+    mormol = "mormol"
+    mpls = "mpls"
+    mpspline = "mpspline"
+    mwmv = "mwmv"
+    rolling_ball = "rolling_ball"
+    tophat = "tophat"
+    corner_cutting = "corner_cutting"
+    irsqr = "irsqr"
+    mixture_model = "mixture_model"
+    pspline_airpls = "pspline_airpls"
+    pspline_asls = "pspline_asls"
+    pspline_aspls = "pspline_aspls"
+    pspline_derpsalsa = "pspline_derpsalsa"
+    pspline_drpls = "pspline_drpls"
+    pspline_iarpls = "pspline_iarpls"
+    pspline_iasls = "pspline_iasls"
+    pspline_mpls = "pspline_mpls"
+    pspline_psalsa = "pspline_psalsa"
+    cwt_br = "cwt_br"
+    dietrich = "dietrich"
+    fabc = "fabc"
+    fastchrom = "fastchrom"
+    golotvin = "golotvin"
+    rubberband = "rubberband"
+    std_distribution = "std_distribution"
+
+    @classmethod
+    def default(cls):
+        return cls.asls.value
+
+
+@NodeDecorator(
+    "pybaselines.optimizers.custom_bc",
+    name="custom_bc",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(pybaselines.optimizers.custom_bc, wrapper_attribute="__fnwrapped__")
+def _custom_bc(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    sampling: Union[int, np.ndarray] = 1,
+    lam: Optional[float] = None,
+    diff_order: int = 2,
+    method: MethodAll = MethodAll.default(),
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    if isinstance(method, MethodAll):
+        method = method.value
+    baseline, params = pybaselines.optimizers.custom_bc(
+        data,
+        x_data=x_data,
+        diff_order=diff_order,
+        lam=lam,
+        method=method,
+        sampling=sampling,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+@NodeDecorator(
+    "pybaselines.optimizers.optimize_extended_range",
+    name="optimize_extended_range",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
+)
+@controlled_wrapper(
+    pybaselines.optimizers.optimize_extended_range, wrapper_attribute="__fnwrapped__"
+)
+def _optimize_extended_range(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    side: Side = Side.default(),
+    width_scale: float = 0.1,
+    height_scale: float = 1.0,
+    sigma_scale: float = 1.0 / 12.0,
+    min_value: float = 2.0,
+    max_value: float = 8.0,
+    step: int = 1,
+    method: MethodAll = MethodAll.default(),
+) -> Tuple[np.ndarray, np.ndarray, dict]:
+    if isinstance(method, MethodAll):
+        method = method.value
+    if isinstance(side, Side):
+        side = side.value
+    baseline, params = pybaselines.optimizers.optimize_extended_range(
+        data,
+        x_data=x_data,
+        width_scale=width_scale,
+        height_scale=height_scale,
+        method=method,
+        min_value=min_value,
+        sigma_scale=sigma_scale,
+        max_value=max_value,
+        step=step,
+    )
+    baseline_corrected = data - baseline
+    return baseline_corrected, baseline, params
+
+
+OPTIMIZERS_NODE_SHELF = Shelf(
+    nodes=[_adaptive_minmax, _collab_pls, _custom_bc, _optimize_extended_range],
+    subshelves=[],
+    name="Optimizers",
+    description="Fits a optimizers baseline",
+)
+
 BASELINE_NODE_SHELF = Shelf(
     nodes=[],
     subshelves=[
@@ -1487,6 +2170,9 @@ BASELINE_NODE_SHELF = Shelf(
         WHITTAKER_NODE_SHELF,
         MORPHOLOGICAL_NODE_SHELF,
         SPLINE_NODE_SHELF,
+        SMOOTH_NODE_SHELF,
+        CLASSIFICATION_NODE_SHELF,
+        OPTIMIZERS_NODE_SHELF,
     ],
     name="Baseline correction",
     description="Provides different techniques for fitting baselines to experimental data using pybaselines.",
