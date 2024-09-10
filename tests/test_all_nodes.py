@@ -11,6 +11,7 @@ from . import (  # noqa E402
     test_normalization,
     test_smoothing,
     test_peak_analysis,
+    test_baseline,
 )
 
 sub_test_classes = []
@@ -19,6 +20,7 @@ for mod in (
     test_normalization,
     test_smoothing,
     test_peak_analysis,
+    test_baseline,
 ):
     for cls in mod.__dict__.values():
         if isinstance(cls, type) and issubclass(cls, unittest.IsolatedAsyncioTestCase):
