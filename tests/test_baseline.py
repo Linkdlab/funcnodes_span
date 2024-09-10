@@ -10,6 +10,15 @@ from funcnodes_span.baseline import (
     _penalized_poly,
     _poly,
     _quant_reg,
+    _airpls,
+    _arpls,
+    _asls,
+    _aspls,
+    _derpsalsa,
+    _drpls,
+    _iarpls,
+    _iasls,
+    _psalsa,
 )
 
 
@@ -113,6 +122,125 @@ class TestBaselinePolynomial(unittest.IsolatedAsyncioTestCase):
         bl: fn.Node = _quant_reg()
         bl.inputs["data"].value = y
         bl.inputs["poly_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+
+class TestBaselineWhittaker(unittest.IsolatedAsyncioTestCase):
+    async def test_airpls(self):
+        bl: fn.Node = _airpls()
+        bl.inputs["data"].value = y
+        bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_arpls(self):
+        bl: fn.Node = _arpls()
+        bl.inputs["data"].value = y
+        bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_asls(self):
+        bl: fn.Node = _asls()
+        bl.inputs["data"].value = y
+        bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_aspls(self):
+        bl: fn.Node = _aspls()
+        bl.inputs["data"].value = y
+        bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_derpsalsa(self):
+        bl: fn.Node = _derpsalsa()
+        bl.inputs["data"].value = y
+        bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_drpls(self):
+        bl: fn.Node = _drpls()
+        bl.inputs["data"].value = y
+        bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_iarpls(self):
+        bl: fn.Node = _iarpls()
+        bl.inputs["data"].value = y
+        bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_iasls(self):
+        bl: fn.Node = _iasls()
+        bl.inputs["data"].value = y
+        bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_psalsa(self):
+        bl: fn.Node = _psalsa()
+        bl.inputs["data"].value = y
+        bl.inputs["diff_order"].value = 3
         self.assertIsInstance(bl, fn.Node)
         await bl
         baseline_corrected = bl.outputs["baseline_corrected"]
