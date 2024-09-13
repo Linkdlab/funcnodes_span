@@ -11,6 +11,8 @@ from funcnodes_span.peak_analysis import (
 )
 from scipy.datasets import electrocardiogram
 
+fn.config.IN_NODE_TEST = True
+
 
 class TestPeakFinder(unittest.IsolatedAsyncioTestCase):
     async def test_default(self):
@@ -50,6 +52,7 @@ class TestFit1D(unittest.IsolatedAsyncioTestCase):
         peaks.inputs["height"].value = 2
         self.assertIsInstance(peaks, fn.Node)
         await peaks
+        self.assertIsInstance(peaks.outputs["out"].value[0], PeakProperties)
         fit: fn.Node = fit_1D()
         fit.inputs["y_array"].value = electrocardiogram()[2000:4000]
         fit.inputs["x_array"].value = np.arange(len(electrocardiogram()[2000:4000]))

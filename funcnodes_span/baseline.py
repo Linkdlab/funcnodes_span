@@ -1,19 +1,15 @@
+import funcnodes as fn
 from funcnodes import NodeDecorator, Shelf
 from exposedfunctionality import controlled_wrapper
 import numpy as np
-from enum import Enum
 from typing import Optional, Tuple, Union, List
 import pybaselines
 
 
-class CostFunction(Enum):
+class CostFunction(fn.DataEnum):
     asymmetric_indec = "asymmetric_indec"
     asymmetric_truncated_quadratic = "asymmetric_truncated_quadratic"
     asymmetric_huber = "asymmetric_huber"
-
-    @classmethod
-    def default(cls):
-        return cls.asymmetric_indec.value
 
 
 @NodeDecorator(
@@ -33,7 +29,7 @@ def _goldindec(
     tol: float = 0.001,
     max_iter: int = 250,
     weights: Optional[np.ndarray] = None,
-    cost_function: CostFunction = CostFunction.default(),
+    cost_function: CostFunction = CostFunction.asymmetric_indec,
     peak_ratio: float = 0.5,
     alpha_factor: float = 0.99,
     tol_2: float = 0.001,
@@ -41,8 +37,7 @@ def _goldindec(
     max_iter_2: int = 100,
     return_coef: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
-    if isinstance(cost_function, CostFunction):
-        cost_function = cost_function.value
+    cost_function = CostFunction.v(cost_function)
     baseline, params = pybaselines.polynomial.goldindec(
         data,
         x_data=x_data,
@@ -186,17 +181,13 @@ def _modpoly(
     return baseline_corrected, baseline, params
 
 
-class PenalizedPolyCostFunction(Enum):
+class PenalizedPolyCostFunction(fn.DataEnum):
     asymmetric_truncated_quadratic = "asymmetric_truncated_quadratic"
     symmetric_truncated_quadratic = "symmetric_truncated_quadratic"
     asymmetric_huber = "asymmetric_huber"
     symmetric_huber = "symmetric_huber"
     asymmetric_indec = "asymmetric_indec"
     symmetric_indec = "symmetric_indec"
-
-    @classmethod
-    def default(cls):
-        return cls.asymmetric_truncated_quadratic.value
 
 
 @NodeDecorator(
@@ -218,13 +209,12 @@ def _penalized_poly(
     max_iter: int = 250,
     tol: float = 1e-3,
     weights: Optional[np.ndarray] = None,
-    cost_function: PenalizedPolyCostFunction = PenalizedPolyCostFunction.default(),
+    cost_function: PenalizedPolyCostFunction = PenalizedPolyCostFunction.asymmetric_truncated_quadratic,
     threshold: Optional[float] = None,
     alpha_factor: float = 0.99,
     return_coef: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
-    if isinstance(cost_function, PenalizedPolyCostFunction):
-        cost_function = cost_function.value
+    cost_function = PenalizedPolyCostFunction.v(cost_function)
     baseline, params = pybaselines.polynomial.penalized_poly(
         data,
         x_data=x_data,
@@ -1540,14 +1530,10 @@ def _noise_median(
     return baseline_corrected, baseline, params
 
 
-class Side(Enum):
+class Side(fn.DataEnum):
     both = "both"
     left = "left"
     right = "right"
-
-    @classmethod
-    def default(cls):
-        return cls.both.value
 
 
 @NodeDecorator(
@@ -1566,13 +1552,12 @@ def _ria(
     half_window: Optional[int] = None,
     max_iter: int = 500,
     tol: float = 0.01,
-    side: Side = Side.default(),
+    side: Side = Side.both,
     width_scale: float = 0.1,
     height_scale: float = 1.0,
     sigma_scale: float = 1.0 / 12.0,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
-    if isinstance(side, Side):
-        side = side.value
+    side = Side.v(side)
     baseline, params = pybaselines.smooth.ria(
         data,
         x_data=x_data,
@@ -1936,13 +1921,9 @@ CLASSIFICATION_NODE_SHELF = Shelf(
 )
 
 
-class Method(Enum):
+class Method(fn.DataEnum):
     modpoly = "modpoly"
     imodpoly = "imodpoly"
-
-    @classmethod
-    def default(cls):
-        return cls.modpoly.value
 
 
 @NodeDecorator(
@@ -1961,14 +1942,13 @@ def _adaptive_minmax(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
     poly_order: Optional[Union[int, List[int]]] = None,
-    method: Method = Method.default(),
+    method: Method = Method.modpoly,
     constrained_fraction: Union[float, List[float]] = 0.01,
     constrained_weight: Union[float, List[float]] = 100000.0,
     estimation_poly_order: int = 2,
     weights: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
-    if isinstance(method, Method):
-        method = method.value
+    method = Method.v(method)
     baseline, params = pybaselines.optimizers.adaptive_minmax(
         data,
         x_data=x_data,
@@ -1983,7 +1963,7 @@ def _adaptive_minmax(
     return baseline_corrected, baseline, params
 
 
-class MethodColab(Enum):
+class MethodColab(fn.DataEnum):
     airpls = "airpls"
     arpls = "arpls"
     asls = "asls"
@@ -1993,10 +1973,6 @@ class MethodColab(Enum):
     iarpls = "iarpls"
     iasls = "iasls"
     psalsa = "psalsa"
-
-    @classmethod
-    def default(cls):
-        return cls.asls.value
 
 
 @NodeDecorator(
@@ -2015,10 +1991,9 @@ def _collab_pls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
     average_dataset: bool = True,
-    method: MethodColab = MethodColab.default(),
+    method: MethodColab = MethodColab.asls,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
-    if isinstance(method, MethodColab):
-        method = method.value
+    method = MethodColab.v(method)
     baseline, params = pybaselines.optimizers.collab_pls(
         data,
         x_data=x_data,
@@ -2029,7 +2004,7 @@ def _collab_pls(
     return baseline_corrected, baseline, params
 
 
-class MethodAll(Enum):
+class MethodAll(fn.DataEnum):
     goldindec = "goldindec"
     imodpoly = "imodpoly"
     loess = "loess"
@@ -2076,10 +2051,6 @@ class MethodAll(Enum):
     rubberband = "rubberband"
     std_distribution = "std_distribution"
 
-    @classmethod
-    def default(cls):
-        return cls.asls.value
-
 
 @NodeDecorator(
     "pybaselines.optimizers.custom_bc",
@@ -2097,10 +2068,9 @@ def _custom_bc(
     sampling: Union[int, np.ndarray] = 1,
     lam: Optional[float] = None,
     diff_order: int = 2,
-    method: MethodAll = MethodAll.default(),
+    method: MethodAll = MethodAll.asls,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
-    if isinstance(method, MethodAll):
-        method = method.value
+    method = MethodAll.v(method)
     baseline, params = pybaselines.optimizers.custom_bc(
         data,
         x_data=x_data,
@@ -2128,19 +2098,17 @@ def _custom_bc(
 def _optimize_extended_range(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
-    side: Side = Side.default(),
+    side: Side = Side.both,
     width_scale: float = 0.1,
     height_scale: float = 1.0,
     sigma_scale: float = 1.0 / 12.0,
     min_value: float = 2.0,
     max_value: float = 8.0,
     step: int = 1,
-    method: MethodAll = MethodAll.default(),
+    method: MethodAll = MethodAll.asls,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
-    if isinstance(method, MethodAll):
-        method = method.value
-    if isinstance(side, Side):
-        side = side.value
+    method = MethodAll.v(method)
+    side = Side.v(side)
     baseline, params = pybaselines.optimizers.optimize_extended_range(
         data,
         x_data=x_data,

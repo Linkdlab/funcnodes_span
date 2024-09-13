@@ -1,8 +1,8 @@
 from funcnodes import NodeDecorator, Shelf
+import funcnodes as fn
 import numpy as np
-from enum import Enum
 from exposedfunctionality import controlled_wrapper
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 from scipy.signal import find_peaks
 from scipy.stats import norm
 from scipy import signal, interpolate
@@ -13,6 +13,14 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import re
 from dataclasses import dataclass
+
+
+@dataclass
+class FittinInfo:
+    model_name: str
+    best_values: dict
+    data: np.ndarray
+    userkws: dict
 
 
 @dataclass
@@ -35,8 +43,8 @@ class PeakProperties:
     width: float
     _is_fitted: bool = False
     _is_force_fitted: bool = False
-    fitting_data: Optional[dict] = None
-    fitting_info: Optional[dict] = None
+    fitting_data: Optional[Dict[str, np.ndarray]] = None
+    fitting_info: Optional[FittinInfo] = None
 
 
 def compute_peak_properties(
@@ -46,25 +54,27 @@ def compute_peak_properties(
     peak_nr: int,
     is_fitted: bool = False,
     is_force_fitted: bool = False,
-    fitting_data: Optional[dict] = None,
-    fitting_info: Optional[dict] = None,
+    fitting_data: Optional[Dict[str, np.ndarray]] = None,
+    fitting_info: Optional[FittinInfo] = None,
 ) -> PeakProperties:
-    # """
-    # Compute various properties of a given peak.
+    """
+    Compute various properties of a given peak.
 
-    # Parameters:
-    # - x_array: np.ndarray - The array of x-values (e.g., time or wavelength).
-    # - y_array: np.ndarray - The array of y-values (e.g., intensity).
-    # - peak_indices: List[int] - A list containing the start index, peak index, and end index of the peak.
-    # - peak_nr: int - The identifier number of the peak.
-    # - is_fitted: bool = False - A flag indicating whether the peak is fitted or not.
-    # - is_force_fitted: bool = False - A flag indicating whether the peak is forced fitted or not.
-    # - fitting_data: Optional[dict] = None - A dictionary containing the fitting data if the peak is fitted.
-    # - fitting_info: Optional[dict] = None - A dictionary containing the fitting information if the peak is fitted.
+    Parameters:
+    - x_array: np.ndarray - The array of x-values (e.g., time or wavelength).
+    - y_array: np.ndarray - The array of y-values (e.g., intensity).
+    - peak_indices: List[int] - A list containing the start index, peak index, and end index of the peak.
+    - peak_nr: int - The identifier number of the peak.
+    - is_fitted: bool = False - A flag indicating whether the peak is fitted or not.
+    - is_force_fitted: bool = False - A flag indicating whether the peak is forced fitted or not.
+    - fitting_data: Optional[Dict[str, np.ndarray]] = None - A dictionary containing the fitting
+        data if the peak is fitted.
+    - fitting_info: Optional[FittinInfo] = None - A dictionary containing the fitting information
+        if the peak is fitted.
 
-    # Returns:
-    # - peak_properties: PeakProperties - A dictionary containing various properties of the peak.
-    # """
+    Returns:
+    - peak_properties: PeakProperties - A dictionary containing various properties of the peak.
+    """
 
     i_index, index, f_index = peak_indices
 
@@ -198,7 +208,7 @@ def peak_finder(
     wlen: Optional[int] = None,
     rel_height: float = 0.5,
     plateau_size: Optional[int] = None,
-) -> dict:
+) -> List[PeakProperties]:
     peak_lst = []
     x_array = np.array(x_array, dtype=float)
     y_array = np.array(y_array, dtype=float)
@@ -331,7 +341,7 @@ def interpolation_1d(
     return x_interpolated, y_interpolated
 
 
-class FittingModel(Enum):
+class FittingModel(fn.DataEnum):
     ComplexConstant = "Complex Constant"
     Gaussian = "Gaussian"
     Gaussian2D = "Gaussian-2D"
@@ -356,12 +366,8 @@ class FittingModel(Enum):
     Rectangle = "Rectangle"
     Expression = "Expression"
 
-    @classmethod
-    def default(cls):
-        return cls.Gaussian.value
 
-
-class BaselineModel(Enum):
+class BaselineModel(fn.DataEnum):
     # Polynomial = "Polynomial"
     Linear = "Linear"
     Spline = "Spline"
@@ -379,8 +385,8 @@ def fit_1D(
     x_array: np.ndarray,
     y_array: np.ndarray,
     basic_peaks: List[PeakProperties],
-    main_model: FittingModel = FittingModel.default(),
-    baseline_model: BaselineModel = BaselineModel.default(),
+    main_model: FittingModel = FittingModel.Gaussian,
+    baseline_model: BaselineModel = BaselineModel.Exponential,
 ) -> List[PeakProperties]:
     # """
     # Fit a 1D model to the given data.
@@ -405,10 +411,9 @@ def fit_1D(
     x_array = np.array(x_array)
     y_array = np.array(y_array)
 
-    if isinstance(main_model, FittingModel):
-        main_model = main_model.value
-    if isinstance(baseline_model, BaselineModel):
-        baseline_model = baseline_model.value
+    main_model = FittingModel.v(main_model)
+
+    baseline_model = BaselineModel.v(baseline_model)
     peaks = copy.deepcopy(basic_peaks)
     y = y_array
     x = x_array
@@ -473,8 +478,15 @@ def fit_1D(
 
     out = f.fit(y, pars, x=x)
     com = out.eval_components(x=x)
-    info_dict = out.__dict__
-    info_dict["model_name"] = main_model
+    # info_dict = out.__dict__
+    # info_dict["model_name"] = main_model
+
+    info_dict = FittinInfo(
+        model_name=main_model,
+        best_values=out.best_values,
+        data=out.data,
+        userkws=out.userkws,
+    )
 
     peak_properties_list = []
 
