@@ -1,28 +1,70 @@
+from typing import Dict, Callable
 from funcnodes import NodeDecorator, Shelf
 import numpy as np
 import pandas as pd
-from enum import Enum
 from scipy.signal import savgol_filter, medfilt
 from scipy.ndimage import gaussian_filter1d
 import warnings
+import funcnodes as fn
 
 warnings.filterwarnings("ignore")
 
-class SmoothMode(Enum):
+
+class SmoothMode(fn.DataEnum):
     SAVITZKY_GOLAY = "savgol"
     GAUSSIAN = "gaussian"
     MOVING_AVERAGE = "ma"
     EXPONENTIAL_MOVING_AVERAGE = "ema"
     MEDIAN = "median"
-    
-    @classmethod
-    def default(cls) -> 'SmoothMode':
-        """Returns the default smoothing mode."""
-        return cls.SAVITZKY_GOLAY.value
+
+
+def smooth_savgol(x: np.ndarray, window: int) -> np.ndarray:
+    return savgol_filter(x, window, 2)
+
+
+def smooth_gaussian(x: np.ndarray, window: int) -> np.ndarray:
+    return gaussian_filter1d(x, window)
+
+
+def smooth_ma(x: np.ndarray, window: int) -> np.ndarray:
+    if x.ndim > 1:
+        n, m = x.shape
+        result = np.zeros((n, m))
+        for i in range(n):
+            result[i, :] = np.convolve(x[i, :], np.ones(window) / window, mode="same")
+        return result
+    else:
+        return np.convolve(x, np.ones(window) / window, mode="same")
+
+
+def smooth_ema(x: np.ndarray, window: int) -> np.ndarray:
+    if x.ndim > 1:
+        n, m = x.shape
+        result = np.zeros((n, m))
+        for i in range(n):
+            result[i, :] = pd.Series(x[i, :]).ewm(span=window).mean().values
+        return result
+    else:
+        return pd.Series(x).ewm(span=window).mean().values
+
+
+def smooth_median(x: np.ndarray, window: int) -> np.ndarray:
+    return medfilt(x, window)
+
+
+_SMOOTHING_MAPPER: Dict[str, Callable[[np.ndarray, int], np.ndarray]] = {
+    SmoothMode.SAVITZKY_GOLAY.value: smooth_savgol,
+    SmoothMode.GAUSSIAN.value: smooth_gaussian,
+    SmoothMode.MOVING_AVERAGE.value: smooth_ma,
+    SmoothMode.EXPONENTIAL_MOVING_AVERAGE.value: smooth_ema,
+    SmoothMode.MEDIAN.value: smooth_median,
+}
+
 
 @NodeDecorator("span.basics.smooth", name="Smoothing")
-
-def _smooth(array: np.ndarray, mode: SmoothMode = SmoothMode.default(), window: int = 5) -> np.ndarray:
+def _smooth(
+    array: np.ndarray, mode: SmoothMode = SmoothMode.SAVITZKY_GOLAY, window: int = 5
+) -> np.ndarray:
     # """
     # Apply different smoothing techniques to the input array.
 
@@ -37,49 +79,12 @@ def _smooth(array: np.ndarray, mode: SmoothMode = SmoothMode.default(), window: 
     # Raises:
     #     ValueError: If an unsupported smoothing mode is provided.
     # """
-    if isinstance(mode, SmoothMode):
-        mode = mode.value
-    def smooth_savgol(x: np.ndarray) -> np.ndarray:
-        return savgol_filter(x, window, 2)
-    
-    def smooth_gaussian(x: np.ndarray) -> np.ndarray:
-        return gaussian_filter1d(x, window)
-    
-    def smooth_ma(x: np.ndarray) -> np.ndarray:
-        if x.ndim > 1:
-            n, m = x.shape
-            result = np.zeros((n, m))
-            for i in range(n):
-                result[i, :] = np.convolve(x[i, :], np.ones(window) / window, mode="same")
-            return result
-        else:
-            return np.convolve(x, np.ones(window) / window, mode="same")
-    
-    def smooth_ema(x: np.ndarray) -> np.ndarray:
-        if x.ndim > 1:
-            n, m = x.shape
-            result = np.zeros((n, m))
-            for i in range(n):
-                result[i, :] = pd.Series(x[i, :]).ewm(span=window).mean().values
-            return result
-        else:
-            return pd.Series(x).ewm(span=window).mean().values
-    
-    def smooth_median(x: np.ndarray) -> np.ndarray:
-        return medfilt(x, window)
-    
-    smoothing_methods = {
-        SmoothMode.SAVITZKY_GOLAY.value: smooth_savgol,
-        SmoothMode.GAUSSIAN.value: smooth_gaussian,
-        SmoothMode.MOVING_AVERAGE.value: smooth_ma,
-        SmoothMode.EXPONENTIAL_MOVING_AVERAGE.value: smooth_ema,
-        SmoothMode.MEDIAN.value: smooth_median
-    }
-    
-    if mode not in smoothing_methods.keys():
+    mode = SmoothMode.v(mode)
+
+    if mode not in _SMOOTHING_MAPPER.keys():
         raise ValueError(f"Unsupported smoothing mode: {mode}")
-    
-    return smoothing_methods[mode](array)
+
+    return _SMOOTHING_MAPPER[mode](array, window)
 
 
 # @NodeDecorator("span.basics.smooth.savgol", name="Savgol")
