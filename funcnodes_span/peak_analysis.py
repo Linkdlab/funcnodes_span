@@ -374,7 +374,7 @@ class BaselineModel(Enum):
         return cls.Exponential.value
 
 
-@NodeDecorator(id="span.basics.fit", name="Fit 1D")
+@NodeDecorator(id="span.basics.fit", name="Fit 1D", separate_process=True)
 def fit_1D(
     x_array: np.ndarray,
     y_array: np.ndarray,
