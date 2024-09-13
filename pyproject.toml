@@ -15,7 +15,7 @@ funcnodes_numpy = "*"
 funcnodes_pandas = "*"
 funcnodes_plotly = "*"
 
-funcnodes-core = ">=0.1.3"
+funcnodes-core = ">=0.1.4"
 pybaselines = "*"
 Numba = "*"
 pentapy = "*"
