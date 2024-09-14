@@ -713,10 +713,10 @@ def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     if not peak._is_fitted:
         raise ValueError("No fitting information is available.")
 
-    x = peak.fitting_info["userkws"]["x"]
+    x = peak.fitting_info.userkws["x"]
     # Extract data from peaks
-    y = peak.fitting_info["data"]
-    best_fit = peak.fitting_info["best_fit"]
+    y = peak.fitting_info.data
+    best_fit = peak.fitting_info.best_fit
 
     # Create a subplot with 1 row, 1 column, and a secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
