@@ -13,6 +13,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import re
 from dataclasses import dataclass
+from .normalization import density_normalization
 
 
 @dataclass
@@ -218,12 +219,35 @@ def peak_finder(
     distance = float(distance) if distance is not None else None
     prominence = float(prominence) if prominence is not None else None
     width = float(width) if width is not None else None
-    wlen = int(wlen) if wlen is not None else None
+    wlen = float(wlen) if wlen is not None else None
     rel_height = float(rel_height)
-    plateau_size = int(plateau_size) if plateau_size is not None else None
+    plateau_size = float(plateau_size) if plateau_size is not None else None
 
     height = 0.05 * np.max(y_array) if height is None else height
     noise_level = 5000 if noise_level is None else noise_level
+
+    if x_array is not None:
+        x_array, y_array = density_normalization(
+            x_array,
+            y_array,
+        )
+
+        xdiff = x_array[1] - x_array[0]
+        # if x is given width is based on the x scale and has to be converted to index
+        if width is not None:
+            width = width / xdiff
+
+        # same for distance
+        if distance is not None:
+            distance = distance / xdiff
+
+        # same for wlen
+        if wlen is not None:
+            wlen = wlen / xdiff
+
+        # same for plateau_size
+        if plateau_size is not None:
+            plateau_size = plateau_size / xdiff
 
     # Make a copy of the input array
     y_array_copy = np.copy(y_array)
@@ -235,8 +259,8 @@ def peak_finder(
         prominence=prominence,
         height=height,
         distance=distance,
-        width=width,
-        wlen=wlen,
+        width=max(1, width) if width is not None else None,
+        wlen=int(wlen) if wlen is not None else None,
         rel_height=rel_height,
         plateau_size=plateau_size,
     )
