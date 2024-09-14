@@ -259,8 +259,8 @@ def peak_finder(
         prominence=prominence,
         height=height,
         distance=distance,
-        width=max(1, width),
-        wlen=int(wlen),
+        width=max(1, width) if width is not None else None,
+        wlen=int(wlen) if wlen is not None else None,
         rel_height=rel_height,
         plateau_size=plateau_size,
     )
