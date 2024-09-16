@@ -32,7 +32,5 @@ class TestAllNodes(TestAllNodesBase):
     sub_test_classes = sub_test_classes
 
     ignore_nodes = [
-        # peak_analysis.plot_peaks,
-        # peak_analysis.plot_fitted_peaks,
         # peak_analysis.force_peak_finder,
     ]
