@@ -8,8 +8,11 @@ from funcnodes_span.peak_analysis import (
     fit_1D,
     FittingModel,
     BaselineModel,
+    plot_peaks,
+    plot_fitted_peaks,
 )
 from scipy.datasets import electrocardiogram
+import plotly.graph_objects as go
 
 fn.config.IN_NODE_TEST = True
 
@@ -25,6 +28,22 @@ class TestPeakFinder(unittest.IsolatedAsyncioTestCase):
         out = peaks.outputs["out"]
         self.assertIsInstance(out.value[0], PeakProperties)
         self.assertEqual(len(out.value), 1)
+
+    async def test_plot_peaks(self):
+        peaks: fn.Node = peak_finder()
+        peaks.inputs["y_array"].value = electrocardiogram()[2000:4000]
+        peaks.inputs["x_array"].value = np.arange(len(electrocardiogram()[2000:4000]))
+        peaks.inputs["height"].value = 2
+
+        plotter = plot_peaks()
+
+        plotter.inputs["peaks_dict"].connect(peaks.outputs["out"])
+        plotter.inputs["y_array"].value = electrocardiogram()[2000:4000]
+        plotter.inputs["x_array"].value = np.arange(len(electrocardiogram()[2000:4000]))
+
+        await fn.run_until_complete(peaks, plotter)
+
+        self.assertIsInstance(plotter.outputs["figure"].value, go.Figure)
 
 
 class TestInterpolation(unittest.IsolatedAsyncioTestCase):
@@ -63,3 +82,24 @@ class TestFit1D(unittest.IsolatedAsyncioTestCase):
         await fn.run_until_complete(fit, peaks)
         out = fit.outputs["out"]
         self.assertIsInstance(out.value[0], PeakProperties)
+
+    async def test_plot_fitted_peaks(self):
+        peaks: fn.Node = peak_finder()
+        peaks.inputs["y_array"].value = electrocardiogram()[2000:4000]
+        peaks.inputs["x_array"].value = np.arange(len(electrocardiogram()[2000:4000]))
+        peaks.inputs["height"].value = 2
+
+        fit: fn.Node = fit_1D()
+        fit.inputs["y_array"].value = electrocardiogram()[2000:4000]
+        fit.inputs["x_array"].value = np.arange(len(electrocardiogram()[2000:4000]))
+        fit.inputs["basic_peaks"].connect(peaks.outputs["out"])
+        fit.inputs["main_model"].value = FittingModel.Gaussian
+        fit.inputs["baseline_model"].value = BaselineModel.Linear
+
+        plotter = plot_fitted_peaks()
+
+        plotter.inputs["peaks"].connect(fit.outputs["out"])
+
+        await fn.run_until_complete(fit, peaks, plotter)
+
+        self.assertIsInstance(plotter.outputs["figure"].value, go.Figure)

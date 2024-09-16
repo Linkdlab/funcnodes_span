@@ -2,7 +2,6 @@ import sys
 import os
 import unittest
 import funcnodes_span as fnmodule  # noqa
-from funcnodes_span import peak_analysis
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from all_nodes_test_base import TestAllNodesBase  # noqa E402
@@ -33,7 +32,7 @@ class TestAllNodes(TestAllNodesBase):
     sub_test_classes = sub_test_classes
 
     ignore_nodes = [
-        peak_analysis.plot_peaks,
-        peak_analysis.plot_fitted_peaks,
-        peak_analysis.force_peak_finder,
+        # peak_analysis.plot_peaks,
+        # peak_analysis.plot_fitted_peaks,
+        # peak_analysis.force_peak_finder,
     ]
