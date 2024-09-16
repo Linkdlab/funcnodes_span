@@ -2,7 +2,7 @@ from funcnodes import NodeDecorator, Shelf
 import funcnodes as fn
 import numpy as np
 from exposedfunctionality import controlled_wrapper
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Tuple, Dict, Union
 from scipy.signal import find_peaks
 from scipy.stats import norm
 from scipy import signal, interpolate
@@ -22,6 +22,8 @@ class FittinInfo:
     best_values: dict
     data: np.ndarray
     userkws: dict
+    best_fit: np.ndarray
+    rsquared: float
 
 
 @dataclass
@@ -198,8 +200,8 @@ def compute_peak_properties(
 @NodeDecorator(id="span.basics.peaks", name="Peak finder")
 @controlled_wrapper(find_peaks, wrapper_attribute="__fnwrapped__")
 def peak_finder(
-    x_array: np.ndarray,
-    y_array: np.ndarray,
+    x: np.ndarray,
+    y: np.ndarray,
     noise_level: Optional[int] = None,
     height: Optional[float] = None,
     threshold: Optional[float] = None,
@@ -211,8 +213,8 @@ def peak_finder(
     plateau_size: Optional[int] = None,
 ) -> List[PeakProperties]:
     peak_lst = []
-    x_array = np.array(x_array, dtype=float)
-    y_array = np.array(y_array, dtype=float)
+    x = np.array(x, dtype=float)
+    y = np.array(y, dtype=float)
     noise_level = int(noise_level) if noise_level is not None else None
     height = float(height) if height is not None else None
     threshold = float(threshold) if threshold is not None else None
@@ -223,16 +225,16 @@ def peak_finder(
     rel_height = float(rel_height)
     plateau_size = float(plateau_size) if plateau_size is not None else None
 
-    height = 0.05 * np.max(y_array) if height is None else height
+    height = 0.05 * np.max(y) if height is None else height
     noise_level = 5000 if noise_level is None else noise_level
 
-    if x_array is not None:
-        x_array, y_array = density_normalization(
-            x_array,
-            y_array,
+    if x is not None:
+        x, y = density_normalization(
+            x,
+            y,
         )
 
-        xdiff = x_array[1] - x_array[0]
+        xdiff = x[1] - x[0]
         # if x is given width is based on the x scale and has to be converted to index
         if width is not None:
             width = width / xdiff
@@ -250,7 +252,7 @@ def peak_finder(
             plateau_size = plateau_size / xdiff
 
     # Make a copy of the input array
-    y_array_copy = np.copy(y_array)
+    y_array_copy = np.copy(y)
 
     # Find the peaks in the copy of the input array
     peaks, _ = find_peaks(
@@ -287,7 +289,7 @@ def peak_finder(
                 # Find the right minimum of the peak
                 right_min = mins[np.argmax(mins > peak)]
                 if right_min < peak:
-                    right_min = len(y_array) - 1
+                    right_min = len(y) - 1
 
                 try:
                     # Find the left minimum of the peak
@@ -313,7 +315,7 @@ def peak_finder(
             for peak in peaks:
                 right_min = mins[np.argmax(mins > peak)]
                 if right_min < peak:
-                    right_min = len(y_array) - 1
+                    right_min = len(y) - 1
                 try:
                     left_min = np.array(mins)[np.where(np.array(mins) < peak)][-1]
                 except IndexError:
@@ -331,7 +333,7 @@ def peak_finder(
 
     for peak_nr, peak in enumerate(peak_lst):
         peak_properties = compute_peak_properties(
-            x_array=x_array, y_array=y_array, peak_indices=peak, peak_nr=peak_nr
+            x_array=x, y_array=y, peak_indices=peak, peak_nr=peak_nr
         )
         peak_properties_list.append(peak_properties)
 
@@ -406,8 +408,8 @@ class BaselineModel(fn.DataEnum):
 
 @NodeDecorator(id="span.basics.fit", name="Fit 1D", separate_process=True)
 def fit_1D(
-    x_array: np.ndarray,
-    y_array: np.ndarray,
+    x: np.ndarray,
+    y: np.ndarray,
     basic_peaks: List[PeakProperties],
     main_model: FittingModel = FittingModel.Gaussian,
     baseline_model: BaselineModel = BaselineModel.Exponential,
@@ -432,15 +434,14 @@ def fit_1D(
 
     # """
 
-    x_array = np.array(x_array)
-    y_array = np.array(y_array)
+    x = np.array(x)
+    y = np.array(y)
 
     main_model = FittingModel.v(main_model)
 
     baseline_model = BaselineModel.v(baseline_model)
     peaks = copy.deepcopy(basic_peaks)
-    y = y_array
-    x = x_array
+
     # if is_sturated:
 
     lowest_index = min(dictionary.i_index for dictionary in peaks)
@@ -510,18 +511,20 @@ def fit_1D(
         best_values=out.best_values,
         data=out.data,
         userkws=out.userkws,
+        best_fit=out.best_fit,
+        rsquared=out.rsquared,
     )
 
     peak_properties_list = []
 
     for key in com.keys():
         if key != "baseline":
-            y_array = com[key]
-            peak_lst = [(0, np.argmax(y_array), len(y_array) - 1)]
+            y = com[key]
+            peak_lst = [(0, np.argmax(y), len(y) - 1)]
             for peak_nr, peak in enumerate(peak_lst):
                 peak_properties = compute_peak_properties(
-                    x_array=x_array,
-                    y_array=y_array,
+                    x_array=x,
+                    y_array=y,
                     peak_indices=peak,
                     peak_nr=peak_nr,
                     is_fitted=True,
@@ -540,7 +543,7 @@ def fit_1D(
 def force_peak_finder(
     x: np.array,
     y: np.array,
-    basic_peaks: List[PeakProperties],
+    basic_peaks: Union[List[PeakProperties], PeakProperties],
 ) -> List[PeakProperties]:
     # """
     # Identify and return the two peaks around the main peak in the given peaks dictionary.
@@ -555,10 +558,14 @@ def force_peak_finder(
     # Returns:
     # - dict: A dictionary containing information about the two identified peaks.
     # """
-    if len(basic_peaks) != 1:
-        raise ValueError("This method accepts one and only one main peak as an input.")
+    if isinstance(basic_peaks, (list, np.ndarray, tuple)):
+        if len(basic_peaks) != 1:
+            raise ValueError(
+                "This method accepts one and only one main peak as an input."
+            )
+        basic_peaks = basic_peaks[0]
 
-    peaks = copy.deepcopy(basic_peaks[0])
+    peaks = copy.deepcopy(basic_peaks)
     main_peak_i_index = peaks.i_index
     main_peak_r_index = peaks.index
     main_peak_f_index = peaks.f_index
@@ -590,7 +597,7 @@ def force_peak_finder(
     ):  # seond peak is in the leftside of the max peak #TODO: fix this
         common_point = max([num for num in max_pp if num < main_peak_r_index])
 
-        print("Left convoluted")
+        # print("Left convoluted")
         peak1 = {
             "I.Index": main_peak_i_index,
             "R.Index": max(
@@ -605,7 +612,7 @@ def force_peak_finder(
         }
     else:
         common_point = next((x for x in max_pp if x > main_peak_r_index), None)
-        print("Right convoluted")
+        # print("Right convoluted")
         peak1 = {
             "I.Index": main_peak_i_index,
             "R.Index": main_peak_r_index,
@@ -639,13 +646,11 @@ def force_peak_finder(
     default_render_options={"data": {"src": "figure"}},
     outputs=[{"name": "figure"}],
 )
-def plot_peaks(
-    x_array: np.array, y_array: np.array, peaks_dict: List[PeakProperties]
-) -> go.Figure:
+def plot_peaks(x: np.array, y: np.array, peaks_dict: List[PeakProperties]) -> go.Figure:
     fig = go.Figure()
 
     # Set up line plot
-    plot_trace = {"x": x_array, "y": y_array, "mode": "lines", "name": "data"}
+    plot_trace = {"x": x, "y": y, "mode": "lines", "name": "data"}
 
     fig.add_trace(go.Scatter(**plot_trace))
 
@@ -657,16 +662,16 @@ def plot_peaks(
         initial_idx = peak.i_index
         ending_idx = peak.f_index
         peak_height = peak.y_at_index
-        plot_y_min = min(y_array[initial_idx], y_array[ending_idx])
+        plot_y_min = min(y[initial_idx], y[ending_idx])
 
         # Create a scatter trace that simulates a rectangle
         fig.add_trace(
             go.Scatter(
                 x=[
-                    x_array[initial_idx],
-                    x_array[ending_idx],
-                    x_array[ending_idx],
-                    x_array[initial_idx],
+                    x[initial_idx],
+                    x[ending_idx],
+                    x[ending_idx],
+                    x[initial_idx],
                 ],
                 y=[plot_y_min, plot_y_min, peak_height, peak_height],
                 fill="toself",
@@ -713,10 +718,10 @@ def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     if not peak._is_fitted:
         raise ValueError("No fitting information is available.")
 
-    x = peak.fitting_info["userkws"]["x"]
+    x = peak.fitting_info.userkws["x"]
     # Extract data from peaks
-    y = peak.fitting_info["data"]
-    best_fit = peak.fitting_info["best_fit"]
+    y = peak.fitting_info.data
+    best_fit = peak.fitting_info.best_fit
 
     # Create a subplot with 1 row, 1 column, and a secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -765,8 +770,8 @@ def plot_fitted_peaks(peaks: List[PeakProperties]) -> go.Figure:
     fig.update_yaxes(title_text="Baseline corrected", secondary_y=True)
     fig.update_layout(
         title={
-            "text": f"{peak.fitting_info['model_name']} model with fitting "
-            f"score = {np.round(peak.fitting_info['rsquared'], 4)}",
+            "text": f"{peak.fitting_info.model_name} model with fitting "
+            f"score = {np.round(peak.fitting_info.rsquared, 4)}",
             "x": 0.5,  # Center the title
             "xanchor": "center",
         },
