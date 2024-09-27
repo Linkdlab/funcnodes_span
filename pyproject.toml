@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "funcnodes-span"
-version = "0.2.3"
+version = "0.2.4"
 description = ""
 authors = ["Kourosh Rezaei <kouroshrezaei90@gmail.com>"]
 readme = "README.md"
@@ -25,6 +25,7 @@ pytest = "*"
 pre-commit = "*"
 funcnodes-module = "*"
 pooch = "*"
+ipykernel = "^6.29.5"
 
 [build-system]
 requires = ["poetry-core"]

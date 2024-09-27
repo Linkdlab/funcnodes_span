@@ -659,19 +659,17 @@ def plot_peaks(x: np.array, y: np.array, peaks_dict: List[PeakProperties]) -> go
 
     # Add rectangle shapes for each peak
     for index, peak in enumerate(peaks_dict):
-        initial_idx = peak.i_index
-        ending_idx = peak.f_index
         peak_height = peak.y_at_index
-        plot_y_min = min(y[initial_idx], y[ending_idx])
+        plot_y_min = min(peak.y_at_i_index, peak.y_at_f_index)
 
         # Create a scatter trace that simulates a rectangle
         fig.add_trace(
             go.Scatter(
                 x=[
-                    x[initial_idx],
-                    x[ending_idx],
-                    x[ending_idx],
-                    x[initial_idx],
+                    peak.x_at_i_index,
+                    peak.x_at_f_index,
+                    peak.x_at_f_index,
+                    peak.x_at_i_index,
                 ],
                 y=[plot_y_min, plot_y_min, peak_height, peak_height],
                 fill="toself",
@@ -680,6 +678,19 @@ def plot_peaks(x: np.array, y: np.array, peaks_dict: List[PeakProperties]) -> go
                 line=dict(width=0),
                 mode="lines",
                 name=f"Peak {peak.id}",
+                legendgroup=f"Peak {peak.id}",  # Group by Peak id
+                showlegend=True,
+            )
+        )
+        # Add an X marker at the exact peak position
+        fig.add_trace(
+            go.Scatter(
+                x=[peak.x_at_index],
+                y=[peak.y_at_index],
+                mode="markers",
+                marker=dict(symbol="x", size=10, color="black"),
+                legendgroup=f"Peak {peak.id}",  # Same group as rectangle
+                showlegend=False,
             )
         )
 
