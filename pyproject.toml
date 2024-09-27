@@ -25,7 +25,7 @@ pytest = "*"
 pre-commit = "*"
 funcnodes-module = "*"
 pooch = "*"
-ipykernel = "^6.29.5"
+
 
 [build-system]
 requires = ["poetry-core"]
