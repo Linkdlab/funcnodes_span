@@ -401,10 +401,6 @@ class BaselineModel(fn.DataEnum):
     Exponential = "Exponential"
     Constant = "Constant"
 
-    @classmethod
-    def default(cls):
-        return cls.Exponential.value
-
 
 @NodeDecorator(id="span.basics.fit", name="Fit 1D", separate_process=True)
 def fit_1D(
@@ -412,7 +408,7 @@ def fit_1D(
     y: np.ndarray,
     basic_peaks: List[PeakProperties],
     main_model: FittingModel = FittingModel.Gaussian,
-    baseline_model: BaselineModel = BaselineModel.Exponential,
+    baseline_model: Optional[BaselineModel] = None,
 ) -> List[PeakProperties]:
     # """
     # Fit a 1D model to the given data.
@@ -439,7 +435,8 @@ def fit_1D(
 
     main_model = FittingModel.v(main_model)
 
-    baseline_model = BaselineModel.v(baseline_model)
+    if baseline_model is not None:
+        baseline_model = BaselineModel.v(baseline_model)
     peaks = copy.deepcopy(basic_peaks)
 
     # if is_sturated:
@@ -451,16 +448,21 @@ def fit_1D(
         knots = np.sort(np.random.choice(knots, size=300, replace=False))
 
     fitting_model = lmfit.models.__dict__["lmfit_models"][main_model]
-    if baseline_model == "Spline":
-        bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](
-            prefix="baseline", xknots=knots
-        )
+    if baseline_model:
+        if baseline_model == "Spline":
+            bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](
+                prefix="baseline", xknots=knots
+            )
+        else:
+            bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](
+                prefix="baseline"
+            )
+        f = bkg2
+        pars = f.guess(y, x=x)
     else:
-        bkg2 = lmfit.models.__dict__["lmfit_models"][baseline_model](prefix="baseline")
+        pars = {}
+        f = None
 
-    f = bkg2
-
-    pars = f.guess(y, x=x)
     for index, peak in enumerate(peaks):
         model = fitting_model(prefix=f"peak{index+1}_")
         pars.update(model.make_params())
@@ -475,12 +477,19 @@ def fit_1D(
         if main_model == "Exponential Gaussian" or main_model == "Skewed Gaussian":
             pars[f"peak{index+1}_gamma"].set(value=1)
 
-        f += model
+        if f is None:
+            f = model
+        else:
+            f += model
 
     out = f.fit(y, pars, x=x)
 
-    f = bkg2
-    pars = f.guess(y, x=x)
+    if baseline_model:
+        f = bkg2
+        pars = f.guess(y, x=x)
+    else:
+        pars = {}
+        f = None
     for index, peak in enumerate(peaks):
         model = fitting_model(prefix=f"peak{index+1}_")
         pars.update(model.make_params())
@@ -499,7 +508,10 @@ def fit_1D(
                 value=out.__dict__["best_values"][f"peak{index+1}_gamma"]
             )
 
-        f += model
+        if f is None:
+            f = model
+        else:
+            f += model
 
     out = f.fit(y, pars, x=x)
     com = out.eval_components(x=x)

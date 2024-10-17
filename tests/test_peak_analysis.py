@@ -84,6 +84,26 @@ class TestFit1D(unittest.IsolatedAsyncioTestCase):
         out = fit.outputs["out"]
         self.assertIsInstance(out.value[0], PeakProperties)
 
+    async def test_fit_wo_baseline(self):
+        peaks: fn.Node = peak_finder()
+        peaks.inputs["y"].value = electrocardiogram()[2000:4000]
+        peaks.inputs["x"].value = np.arange(len(electrocardiogram()[2000:4000]))
+        peaks.inputs["height"].value = 2
+        self.assertIsInstance(peaks, fn.Node)
+        await peaks
+        self.assertIsInstance(peaks.outputs["out"].value[0], PeakProperties)
+        fit: fn.Node = fit_1D()
+        fit.inputs["y"].value = electrocardiogram()[2000:4000]
+        fit.inputs["x"].value = np.arange(len(electrocardiogram()[2000:4000]))
+        fit.inputs["basic_peaks"].connect(peaks.outputs["out"])
+        fit.inputs["main_model"].value = FittingModel.Gaussian
+        fit.inputs["baseline_model"].value = None
+        self.assertIsInstance(fit, fn.Node)
+
+        await fn.run_until_complete(fit, peaks)
+        out = fit.outputs["out"]
+        self.assertIsInstance(out.value[0], PeakProperties)
+
     async def test_plot_fitted_peaks(self):
         peaks: fn.Node = peak_finder()
         peaks.inputs["y"].value = electrocardiogram()[2000:4000]
