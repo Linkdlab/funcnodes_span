@@ -14,11 +14,11 @@ funcnodes = "*"
 funcnodes_numpy = "*"
 funcnodes_pandas = "*"
 funcnodes_plotly = "*"
-
 funcnodes-core = ">=0.1.4"
 pybaselines = "*"
 Numba = "*"
 pentapy = "*"
+funcnodes-lmfit = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
