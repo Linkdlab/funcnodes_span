@@ -17,11 +17,12 @@ class TestFitSignals1D(unittest.TestCase):
         """
         # Generate synthetic data: a sum of Gaussian peaks with noise
         self.x = np.linspace(0, 100, 500)
+        self.rnd = np.random.RandomState(42)
         self.y = (
             10 * np.exp(-((self.x - 20) ** 2) / (2 * 2**2))  # Peak 1
             + 5 * np.exp(-((self.x - 30) ** 2) / (2 * 5**2))  # Peak 2
             + 7 * np.exp(-((self.x - 80) ** 2) / (2 * 3**2))  # Peak 3
-        ) + np.random.normal(0, 0.2, self.x.size)  # Add some noise
+        ) + self.rnd.normal(0, 0.2, self.x.size)  # Add some noise
 
         self.peaks, _, _ = peak_finder.o_func(
             gaussian_filter1d(self.y, 5),

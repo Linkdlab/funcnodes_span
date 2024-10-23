@@ -103,14 +103,13 @@ def peak_finder(
     )
 
     # Calculate the standard deviation of peak prominences
-
-    np.random.seed(seed=1)
+    rnd = np.random.RandomState(42)
     # Fit a normal distribution to the input array
     mu, std = norm.fit(y)
     if peaks is not None:
         try:
             # Add noise to the input array
-            noise = np.random.normal(mu / noise_level, std / noise_level, np.shape(y))
+            noise = rnd.normal(mu / noise_level, std / noise_level, np.shape(y))
             y = y + noise
 
             # Find the minimums in the copy of the input array
@@ -142,7 +141,7 @@ def peak_finder(
 
         except ValueError:
             # If an error occurs when adding noise to the input array, add stronger noise and try again
-            noise = np.random.normal(mu / 100, std / 100, np.shape(y))
+            noise = rnd.normal(mu / 100, std / 100, np.shape(y))
             y = y + noise
             mins, _ = find_peaks(-1 * y)
             for peak in peaks:
