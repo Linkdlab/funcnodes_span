@@ -1,4 +1,4 @@
-from typing import Dict, Callable
+from typing import Dict, Callable, Union
 from funcnodes import NodeDecorator, Shelf
 import numpy as np
 import pandas as pd
@@ -61,17 +61,27 @@ _SMOOTHING_MAPPER: Dict[str, Callable[[np.ndarray, int], np.ndarray]] = {
 }
 
 
-@NodeDecorator("span.basics.smooth", name="Smoothing")
+@NodeDecorator(
+    "span.basics.smooth",
+    name="Smoothing",
+    outputs=[{"name": "smoothed"}],
+)
 def _smooth(
-    array: np.ndarray, mode: SmoothMode = SmoothMode.SAVITZKY_GOLAY, window: int = 5
+    y: np.ndarray,
+    mode: SmoothMode = SmoothMode.SAVITZKY_GOLAY,
+    window: Union[float, int] = 5,
+    x: np.ndarray = None,
 ) -> np.ndarray:
     # """
     # Apply different smoothing techniques to the input array.
+    # the window is the number of points to consider for the smoothing.
+    # If x is provided, the window is in x units and is converted to points using the median x difference.
 
     # Args:
-    #     array (np.ndarray): The input array to be smoothed.
+    #     y (np.ndarray): The input array to be smoothed.
     #     mode (SmoothMode): The smoothing mode to apply. Defaults to SmoothMode.SAVITZKY_GOLAY.
     #     window (int): The window size for the smoothing function. Defaults to 5.
+    #     x (np.ndarray): The x values of the input array. Defaults to None.
 
     # Returns:
     #     np.ndarray: The smoothed array.
@@ -84,7 +94,12 @@ def _smooth(
     if mode not in _SMOOTHING_MAPPER.keys():
         raise ValueError(f"Unsupported smoothing mode: {mode}")
 
-    return _SMOOTHING_MAPPER[mode](array, window)
+    if x is not None:
+        med_xdiff = np.nanmedian(np.diff(x))
+        window = window / med_xdiff
+    window = int(window)
+
+    return _SMOOTHING_MAPPER[mode](y, window)
 
 
 # @NodeDecorator("span.basics.smooth.savgol", name="Savgol")
