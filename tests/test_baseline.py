@@ -58,6 +58,8 @@ from funcnodes_span.baseline import (
     _collab_pls,
     _custom_bc,
     _optimize_extended_range,
+    estimate_baseline_regions_node,
+    flatfit,
 )
 
 
@@ -74,7 +76,7 @@ signal = (
 )
 baseline = 5 + 10 * np.exp(-x / 600)
 
-noise = np.random.default_rng(0).normal(0, 0.1, len(x))
+noise = np.random.RandomState(42).normal(0, 0.1, len(x))
 y = signal + baseline + noise
 
 
@@ -280,6 +282,18 @@ class TestBaselineWhittaker(unittest.IsolatedAsyncioTestCase):
         bl: fn.Node = _psalsa()
         bl.inputs["data"].value = y
         bl.inputs["diff_order"].value = 3
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline_corrected = bl.outputs["baseline_corrected"]
+        baseline = bl.outputs["baseline"]
+        params = bl.outputs["params"]
+        self.assertIsInstance(baseline_corrected.value, np.ndarray)
+        self.assertIsInstance(baseline.value, np.ndarray)
+        self.assertIsInstance(params.value, dict)
+
+    async def test_flatfit(self):
+        bl: fn.Node = flatfit()
+        bl.inputs["data"].value = y
         self.assertIsInstance(bl, fn.Node)
         await bl
         baseline_corrected = bl.outputs["baseline_corrected"]
@@ -766,3 +780,21 @@ class TestBaselineOptimizers(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(baseline_corrected.value, np.ndarray)
         self.assertIsInstance(baseline.value, np.ndarray)
         self.assertIsInstance(params.value, dict)
+
+
+class TestbaselineNodes(unittest.IsolatedAsyncioTestCase):
+    async def test_estimate_baseline_regions_node(self):
+        bl: fn.Node = estimate_baseline_regions_node()
+        bl.inputs["y"].value = y
+        bl.inputs["x"].value = x
+        self.assertIsInstance(bl, fn.Node)
+        await bl
+        baseline = bl.outputs["baseline"].value
+        is_baseline = bl.outputs["is_baseline"].value
+        self.assertIsInstance(baseline, np.ndarray)
+        self.assertEqual(baseline.shape, y.shape)
+        self.assertIsInstance(is_baseline, np.ndarray)
+        self.assertEqual(is_baseline.shape, y.shape)
+        self.assertEqual(is_baseline.dtype, bool)
+        self.assertGreaterEqual(is_baseline.sum(), 200)
+        self.assertLessEqual(is_baseline.sum(), 300)
