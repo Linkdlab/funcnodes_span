@@ -23,8 +23,6 @@ funcnodes_numpy = "*"
 funcnodes_pandas = "*"
 funcnodes_plotly = "*"
 pybaselines = "*"
-Numba = "*"
-pentapy = "*"
 funcnodes-lmfit = "*"
 
 [tool.poetry.group.dev.dependencies]

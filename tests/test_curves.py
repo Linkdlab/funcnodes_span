@@ -25,7 +25,7 @@ class TestCurveFunctions(unittest.IsolatedAsyncioTestCase):
     async def test_estimate_noise(self):
         x = np.linspace(0, 30, 10000)
         # gaussian distribution
-        y = np.exp(-((x - 15) ** 2)) + np.random.normal(0, 0.1, len(x))
+        y = np.exp(-((x - 15) ** 2)) + np.random.RandomState(42).normal(0, 0.1, len(x))
 
         node = estimate_noise_node()
         node.inputs["x"].value = x

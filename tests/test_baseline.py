@@ -76,7 +76,7 @@ signal = (
 )
 baseline = 5 + 10 * np.exp(-x / 600)
 
-noise = np.random.default_rng(0).normal(0, 0.1, len(x))
+noise = np.random.RandomState(42).normal(0, 0.1, len(x))
 y = signal + baseline + noise
 
 
