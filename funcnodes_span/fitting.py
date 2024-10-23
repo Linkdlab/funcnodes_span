@@ -1,8 +1,10 @@
-from typing import List, Type
+from typing import List, Type, Tuple
 import numpy as np
 from lmfit import Model
-from lmfit.models import SkewedGaussianModel, GaussianModel
-from .peak_analysis import PeakProperties
+from lmfit.model import ModelResult
+from lmfit.models import GaussianModel
+from .peaks import PeakProperties
+from funcnodes_lmfit.model import AUTOMODELMAP
 
 
 def group_signals(
@@ -59,16 +61,34 @@ def group_signals(
     return [[peaks[pi] for pi in cp] for cp in connected_peaks if len(cp) > 0]
 
 
+def get_submodel_by_prefix(model: Model, prefix: str) -> Model:
+    """
+    Get a submodel from a composite model by prefix.
+
+    Args:
+        model (Model): The composite model.
+        prefix (str): The prefix of the submodel to retrieve.
+
+    Returns:
+        Model: The submodel with the specified prefix.
+    """
+    for m in model.components:
+        if m.prefix == prefix:
+            return m
+    raise ValueError(f"No submodel found with prefix {prefix}.")
+
+
 def fit_local_peak(
     x: np.ndarray,
     y: np.ndarray,
     peak: PeakProperties,
-    model_class: Type[Model] = SkewedGaussianModel,
+    model_class: Type[Model] = GaussianModel,
     filter_negatives: bool = True,
     incomplete_peak_model_class: Type[Model] = GaussianModel,
     incomplete_threshold: float = 0.8,
     incomplete_x_extend: float = 2.0,
-):
+    iter_cb=None,
+) -> Tuple[PeakProperties, Model, ModelResult]:
     """
     Fits a local peak with the provided model class.
 
@@ -76,7 +96,7 @@ def fit_local_peak(
         x (np.ndarray): Array of x-values.
         y (np.ndarray): Array of y-values.
         peak (PeakProperties): Peak properties for the specific peak.
-        model_class: Model class for fitting, defaults to SkewedGaussianModel.
+        model_class: Model class for fitting, defaults to GaussianModel.
         filter_negatives (bool): Whether to filter negative y-values.
         incomplete_peak_model_class: Model class for incomplete peaks.
         incomplete_threshold (float): Threshold to consider a peak as incomplete.
@@ -85,6 +105,12 @@ def fit_local_peak(
     Returns:
         Model: The fitted model for the peak.
     """
+
+    if isinstance(model_class, str):
+        model_class = AUTOMODELMAP[model_class]
+
+    if isinstance(incomplete_peak_model_class, str):
+        incomplete_peak_model_class = AUTOMODELMAP[incomplete_peak_model_class]
 
     pf = f"p{peak.id}_"
     model = model_class(prefix=pf)  # Initialize the model
@@ -98,11 +124,22 @@ def fit_local_peak(
     local_min = yf.min()
     local_max = yf.max()
 
+    if peak.xfull is None:
+        peak.xfull = x
+    if peak.yfull is None:
+        peak.yfull = y
+
+    if isinstance(model_class, str):
+        model_class = AUTOMODELMAP[model_class]
+
+    if isinstance(incomplete_peak_model_class, str):
+        incomplete_peak_model_class = AUTOMODELMAP[incomplete_peak_model_class]
+
     if np.abs(yf[-1] - yf[0]) > incomplete_threshold * (local_max - local_min):
         # Handle incomplete peak by extending the range and filling gaps
         m_complete = incomplete_peak_model_class()
         guess = m_complete.guess(data=yf, x=xf)
-        fr_complete = m_complete.fit(data=yf, x=xf, params=guess)
+        fr_complete = m_complete.fit(data=yf, x=xf, params=guess, iter_cb=iter_cb)
 
         fwhm = 2 * np.sqrt(2 * np.log(2)) * fr_complete.params["sigma"].value
         center = fr_complete.params["center"].value
@@ -136,22 +173,42 @@ def fit_local_peak(
     # Update the model with the fitted parameters
     for pname, param in fr.params.items():
         v = param.value
-        if v != 0:
-            model.set_param_hint(pname, value=v)
+        data = {"value": v}
+        if "center" in pname:
+            data["min"] = min(xf.min(), v)
+            data["max"] = max(xf.max(), v)
 
-    return model
+        if "amplitude" in pname:
+            if v > 0:
+                data["min"] = v / 10
+                data["max"] = 2 * v
+            if v < 0:
+                data["max"] = v / 10
+                data["min"] = 2 * v
+
+        # if "sigma" in pname:
+        #     data["min"] = v / 1.1
+        #     data["max"] = 1.1 * v
+
+        if v != 0:
+            model.set_param_hint(pname, **data)
+
+    peak.model = model
+
+    return peak, model, fr
 
 
 def fit_peak_group(
     x,
     y,
     peaks: List[PeakProperties],
-    model_class: Type[Model] = SkewedGaussianModel,
+    model_class: Type[Model] = GaussianModel,
     filter_negatives: bool = True,
     incomplete_threshold: float = 0.8,
     incomplete_x_extend: float = 2.0,
     incomplete_peak_model_class: Type[Model] = GaussianModel,
-):
+    iter_cb=None,
+) -> Model:
     """
     Fits a group of peaks using a model class.
 
@@ -159,7 +216,7 @@ def fit_peak_group(
         x (np.ndarray): Array of x-values.
         y (np.ndarray): Array of y-values.
         peaks (List[PeakProperties]): List of peaks to fit.
-        model_class: Model class for fitting, defaults to SkewedGaussianModel.
+        model_class: Model class for fitting, defaults to GaussianModel.
         filter_negatives (bool): Whether to filter negative y-values.
         incomplete_threshold (float): Threshold to consider a peak as incomplete.
         incomplete_x_extend (float): Factor to extend the x-range for incomplete peaks.
@@ -168,6 +225,13 @@ def fit_peak_group(
     Returns:
         Model: The fitted model for the group of peaks.
     """
+
+    if isinstance(model_class, str):
+        model_class = AUTOMODELMAP[model_class]
+
+    if isinstance(incomplete_peak_model_class, str):
+        incomplete_peak_model_class = AUTOMODELMAP[incomplete_peak_model_class]
+
     groupmodel = None
     most_left = min([p.i_index for p in peaks])  # Find the leftmost index in the group
     most_right = max(
@@ -176,7 +240,7 @@ def fit_peak_group(
 
     # Fit each peak in the group
     for peak in peaks:
-        peakmodel = fit_local_peak(
+        _, peakmodel, _ = fit_local_peak(
             x=x,
             y=y,
             peak=peak,
@@ -185,6 +249,7 @@ def fit_peak_group(
             incomplete_threshold=incomplete_threshold,
             incomplete_x_extend=incomplete_x_extend,
             incomplete_peak_model_class=incomplete_peak_model_class,
+            iter_cb=iter_cb,
         )
         # If no group model exists, initialize it with the first peak model
         if groupmodel is None:
@@ -196,35 +261,73 @@ def fit_peak_group(
     # Fit the model to the combined data of the peak group
     xgroup = x[most_left : most_right + 1]
     ygroup = y[most_left : most_right + 1]
-    groupfit = groupmodel.fit(data=ygroup, x=xgroup)
+    groupfit = groupmodel.fit(data=ygroup, x=xgroup, iter_cb=iter_cb)
 
     # Update the group model with the best-fit parameters
     for pname, param in groupfit.params.items():
         v = param.value
         groupmodel.set_param_hint(pname, value=v)
 
+    for peak in peaks:
+        peak.model = get_submodel_by_prefix(groupmodel, f"p{peak.id}_")
+
     return groupmodel
 
 
-def fit_signals_1D(
+def fit_peaks(
+    peaks: List[PeakProperties],
     x: np.ndarray,
     y: np.ndarray,
-    peaks: List[PeakProperties],
-    model_class: Type[Model] = SkewedGaussianModel,
+    model_class: Type[Model] = GaussianModel,
     filter_negatives: bool = True,
     baseline_factor: float = 0.001,
     incomplete_threshold: float = 0.8,
     incomplete_x_extend: float = 2.0,
     incomplete_peak_model_class: Type[Model] = GaussianModel,
-):
+    iter_cb=None,
+) -> Tuple[List[PeakProperties], Model, ModelResult]:
     """
-    Fits signals in 1D by first grouping the peaks and then fitting each group.
+    Fits multiple peaks in a 1D signal by grouping the peaks based on a baseline cutoff,
+    fitting each group of peaks with a provided model, and then fitting the entire signal
+    globally using the combined peak models.
+
+    The function follows a multi-step process:
+
+    1. **Group Peaks by Baseline**:
+        Peaks are grouped together based on a baseline factor that determines where
+        the signal significantly deviates from a baseline. The baseline cutoff is defined
+        as a fraction of the maximum y-value. Peaks within the same baseline region
+        are grouped together for simultaneous fitting.
+
+    2. **Fit Individual Peak Groups**:
+        Each group of peaks is fitted independently. The fitting process begins by
+        fitting individual peaks within each group using the `fit_local_peak` function.
+        If a peak is identified as incomplete (e.g., if its start or end is truncated),
+        the x-range of the signal is extended, and a secondary model (typically a
+        Gaussian) is used to extend and complete the peak.
+
+        For each group, the individual peak models are summed together to create
+        a combined model for the entire group. This model is then fitted to the signal
+        data for that peak group.
+
+    3. **Global Signal Fitting**:
+        Once all peak groups have been fitted independently, their combined models
+        are summed together to create a global model that represents the entire signal.
+        This global model is then fitted to the entire signal (the full x and y arrays).
+        The parameters of the global model are updated with the best-fit values obtained
+        from the fitting process.
+
+    4. **Return the Global Model**:
+        The global model, which now represents the best fit for the entire signal based
+        on the detected peaks, is returned. This model contains the best-fit parameters
+        for each peak and group of peaks in the signal, allowing for further analysis or
+        visualization.
 
     Args:
         x (np.ndarray): Array of x-values.
         y (np.ndarray): Array of y-values.
         peaks (List[PeakProperties]): List of detected peaks.
-        model_class: Model class for fitting, defaults to SkewedGaussianModel.
+        model_class: Model class for fitting, defaults to GaussianModel.
         filter_negatives (bool): Whether to filter negative y-values.
         baseline_factor (float): Factor to determine the baseline cutoff.
         incomplete_threshold (float): Threshold to consider a peak as incomplete.
@@ -234,6 +337,15 @@ def fit_signals_1D(
     Returns:
         Model: The fitted model for the global signal.
     """
+    if isinstance(model_class, str):
+        model_class = AUTOMODELMAP[model_class]
+
+    if isinstance(incomplete_peak_model_class, str):
+        incomplete_peak_model_class = AUTOMODELMAP[incomplete_peak_model_class]
+
+    if len(peaks) == 0:
+        raise ValueError("No peaks provided for fitting.")
+
     # Group peaks based on the baseline factor
     connected_peaks = group_signals(x, y, peaks, baseline_factor=baseline_factor)
 
@@ -249,6 +361,7 @@ def fit_signals_1D(
             incomplete_threshold=incomplete_threshold,
             incomplete_x_extend=incomplete_x_extend,
             incomplete_peak_model_class=incomplete_peak_model_class,
+            iter_cb=iter_cb,
         )
         if global_model is None:
             global_model = m
@@ -257,11 +370,14 @@ def fit_signals_1D(
             global_model += m
 
     # Fit the global model to the full data
-    global_fit = global_model.fit(data=y, x=x)
+    global_fit = global_model.fit(data=y, x=x, iter_cb=iter_cb)
 
     # Update the global model with the best-fit parameters
     for pname, param in global_fit.params.items():
         v = param.value
         global_model.set_param_hint(pname, value=v)
 
-    return global_model
+    for peak in peaks:
+        peak.model = get_submodel_by_prefix(global_model, f"p{peak.id}_")
+
+    return peaks, global_model, global_fit

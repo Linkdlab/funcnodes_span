@@ -1,12 +1,57 @@
 import funcnodes as fn
 from funcnodes import NodeDecorator, Shelf
-from exposedfunctionality import controlled_wrapper
 import numpy as np
 from typing import Optional, Tuple, Union, List
 import pybaselines
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
 from scipy.signal import savgol_filter
+from .normalization import density_normalization
+from ._baseline import estimate_baseline_regions
+
+
+def baselinewrapper(func):
+    @fn.signaturewrapper(func)
+    def blw(
+        data: np.ndarray,
+        *args,
+        x_data: Optional[np.ndarray] = None,
+        regions: Optional[np.ndarray] = None,
+        estimate_window: Optional[float] = None,
+        **kwargs,
+    ) -> Tuple[np.ndarray, np.ndarray, dict]:
+        if regions is None and estimate_window is not None:
+            pre_bl, _ = func(data, *args, x_data=x_data, **kwargs)
+            pre_flatted = data - pre_bl
+            y_bl, regions = estimate_baseline_regions(
+                x_data, data, pre_flatted, estimate_window
+            )
+
+        if not np.any(regions):
+            regions = None
+
+        if regions is not None:
+            _data = data[regions]
+            if x_data is not None:
+                _x_data = x_data[regions]
+            else:
+                _x_data = x_data
+        else:
+            _data = data
+            _x_data = x_data
+
+        baseline, params = func(_data, *args, x_data=_x_data, **kwargs)
+
+        if regions is not None:
+            if x_data is None:
+                x_data = np.linspace(-1, 1, len(data))
+            baseline = np.interp(x_data, x_data[regions], baseline)
+
+        baseline_corrected = data - baseline
+
+        return baseline_corrected, baseline, params
+
+    return blw
 
 
 class CostFunction(fn.DataEnum):
@@ -24,10 +69,15 @@ class CostFunction(fn.DataEnum):
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.polynomial.goldindec, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.polynomial.goldindec, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _goldindec(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     poly_order: int = 2,
     tol: float = 0.001,
     max_iter: int = 250,
@@ -56,8 +106,7 @@ def _goldindec(
         return_coef=return_coef,
         max_iter_2=max_iter_2,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -69,10 +118,15 @@ def _goldindec(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.polynomial.imodpoly, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.polynomial.imodpoly, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _imodpoly(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     poly_order: int = 2,
     max_iter: int = 250,
     tol: float = 1e-3,
@@ -94,8 +148,7 @@ def _imodpoly(
         return_coef=return_coef,
         mask_initial_peaks=mask_initial_peaks,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -107,10 +160,13 @@ def _imodpoly(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.polynomial.loess, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.polynomial.loess, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _loess(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     fraction: float = 0.2,
     total_points: Optional[int] = None,
     scale: float = 3.0,
@@ -144,8 +200,7 @@ def _loess(
         return_coef=return_coef,
         delta=delta,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -157,10 +212,15 @@ def _loess(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.polynomial.modpoly, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.polynomial.modpoly, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _modpoly(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     poly_order: int = 2,
     max_iter: int = 250,
     tol: float = 1e-3,
@@ -180,8 +240,7 @@ def _modpoly(
         mask_initial_peaks=mask_initial_peaks,
         return_coef=return_coef,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 class PenalizedPolyCostFunction(fn.DataEnum):
@@ -202,12 +261,15 @@ class PenalizedPolyCostFunction(fn.DataEnum):
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.polynomial.penalized_poly, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _penalized_poly(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     poly_order: int = 2,
     max_iter: int = 250,
     tol: float = 1e-3,
@@ -230,8 +292,7 @@ def _penalized_poly(
         alpha_factor=alpha_factor,
         return_coef=return_coef,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -243,10 +304,13 @@ def _penalized_poly(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.polynomial.poly, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.polynomial.poly, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _poly(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     poly_order: int = 2,
     weights: Optional[np.ndarray] = None,
     return_coef: bool = False,
@@ -258,8 +322,7 @@ def _poly(
         weights=weights,
         return_coef=return_coef,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -271,10 +334,15 @@ def _poly(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.polynomial.quant_reg, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.polynomial.quant_reg, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _quant_reg(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     poly_order: int = 2,
     quantile: float = 0.05,
     max_iter: int = 250,
@@ -294,8 +362,7 @@ def _quant_reg(
         eps=eps,
         return_coef=return_coef,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 POLYNOMIAL_NODE_SHELF = Shelf(
@@ -315,10 +382,13 @@ POLYNOMIAL_NODE_SHELF = Shelf(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.whittaker.airpls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.whittaker.airpls, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _airpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000000.0,
     diff_order: int = 2,
     max_iter: int = 50,
@@ -334,8 +404,7 @@ def _airpls(
         weights=weights,
         diff_order=diff_order,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -347,10 +416,13 @@ def _airpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.whittaker.arpls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.whittaker.arpls, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _arpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 100000.0,
     diff_order: int = 2,
     max_iter: int = 50,
@@ -366,8 +438,7 @@ def _arpls(
         weights=weights,
         diff_order=diff_order,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -379,10 +450,13 @@ def _arpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.whittaker.asls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.whittaker.asls, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _asls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000000.0,
     p: float = 0.01,
     diff_order: int = 2,
@@ -400,8 +474,7 @@ def _asls(
         weights=weights,
         diff_order=diff_order,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -413,10 +486,13 @@ def _asls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.whittaker.aspls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.whittaker.aspls, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _aspls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 100000.0,
     alpha: Optional[np.ndarray] = None,
     diff_order: int = 2,
@@ -434,8 +510,7 @@ def _aspls(
         weights=weights,
         diff_order=diff_order,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -447,10 +522,15 @@ def _aspls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.whittaker.derpsalsa, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.whittaker.derpsalsa, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _derpsalsa(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000000.0,
     p: float = 0.01,
     k: Optional[float] = None,
@@ -472,8 +552,7 @@ def _derpsalsa(
         smooth_half_window=smooth_half_window,
         num_smooths=num_smooths,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -485,10 +564,13 @@ def _derpsalsa(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.whittaker.drpls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.whittaker.drpls, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _drpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 100000.0,
     eta: float = 0.5,
     max_iter: int = 50,
@@ -506,8 +588,7 @@ def _drpls(
         diff_order=diff_order,
         tol=tol,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -519,10 +600,13 @@ def _drpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.whittaker.iarpls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.whittaker.iarpls, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _iarpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 100000.0,
     max_iter: int = 50,
     tol: float = 1e-3,
@@ -538,8 +622,7 @@ def _iarpls(
         diff_order=diff_order,
         tol=tol,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -551,10 +634,13 @@ def _iarpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.whittaker.iasls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.whittaker.iasls, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _iasls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 100000.0,
     p: float = 0.5,
     lam_1: float = 0.0001,
@@ -574,8 +660,7 @@ def _iasls(
         diff_order=diff_order,
         tol=tol,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -587,10 +672,13 @@ def _iasls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.whittaker.psalsa, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.whittaker.psalsa, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _psalsa(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 100000.0,
     p: float = 0.5,
     k: Optional[float] = None,
@@ -610,14 +698,27 @@ def _psalsa(
         diff_order=diff_order,
         tol=tol,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @fn.NodeDecorator(
-    "baselines.whittaker.flatfit", name="FlatFit", outputs=[{"name": "baseline"}]
+    "baselines.whittaker.flatfit",
+    name="FlatFit",
+    outputs=[
+        {"name": "baseline_corrected"},
+        {"name": "baseline"},
+        {"name": "params"},
+    ],
 )
-def flatfit(data: np.ndarray, smoothness: float, p: float) -> np.ndarray:
+@baselinewrapper
+def flatfit(
+    data: np.ndarray,
+    x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
+    smoothness: float = 1,
+    p: float = 0.03,
+) -> Tuple[np.ndarray, np.ndarray, dict]:
     """
     FlatFit: least squares weighted by inverse scale of 1st and 2nd derivatives with smoothness penalty
 
@@ -648,7 +749,19 @@ def flatfit(data: np.ndarray, smoothness: float, p: float) -> np.ndarray:
     where `W` is determined by slope and curvature at given point
 
     """
+
     y = np.array(data)
+    if x_data is not None:
+        _x_data = np.array(x_data, dtype=float)
+        o_x = _x_data
+        _x_data, y = density_normalization(
+            _x_data,
+            y,
+        )
+    else:
+        _x_data = np.linspace(-1, 1, len(y))
+        o_x = _x_data
+
     assert len(y.shape) == 1, "Incorrect data input shape for AsLS"
     assert len(y) > 3, "At least 4 data points muts be provided for AsLS"
 
@@ -677,7 +790,15 @@ def flatfit(data: np.ndarray, smoothness: float, p: float) -> np.ndarray:
     Z = W + H
     z = spsolve(Z, w * y)
 
-    return z
+    z_interpolated = np.interp(o_x, _x_data, z)
+    baseline = z_interpolated
+    params = {
+        "smoothness": smoothness,
+        "p": p,
+        "lambda": lamb,
+        "filter_window": filter_window,
+    }
+    return baseline, params
 
 
 WHITTAKER_NODE_SHELF = Shelf(
@@ -708,12 +829,15 @@ WHITTAKER_NODE_SHELF = Shelf(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.morphological.amormol, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _amormol(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     tol: float = 1e-3,
     max_iter: int = 200,
@@ -721,8 +845,7 @@ def _amormol(
     baseline, params = pybaselines.morphological.amormol(
         data, x_data=x_data, max_iter=max_iter, tol=tol, half_window=half_window
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -734,10 +857,15 @@ def _amormol(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.morphological.imor, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.morphological.imor, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _imor(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     tol: float = 1e-3,
     max_iter: int = 200,
@@ -745,8 +873,7 @@ def _imor(
     baseline, params = pybaselines.morphological.imor(
         data, x_data=x_data, max_iter=max_iter, tol=tol, half_window=half_window
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -758,10 +885,15 @@ def _imor(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.morphological.jbcd, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.morphological.jbcd, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _jbcd(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     alpha: float = 0.1,
     beta: float = 10.0,
@@ -789,8 +921,7 @@ def _jbcd(
         tol_2=tol_2,
         robust_opening=robust_opening,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -802,17 +933,19 @@ def _jbcd(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.morphological.mor, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.morphological.mor, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _mor(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     baseline, params = pybaselines.morphological.mor(
         data, x_data=x_data, half_window=half_window
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -824,10 +957,15 @@ def _mor(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.morphological.mormol, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.morphological.mormol, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _mormol(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     tol: float = 1e-3,
     max_iter: int = 200,
@@ -841,8 +979,7 @@ def _mormol(
         half_window=half_window,
         smooth_half_window=smooth_half_window,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -854,10 +991,15 @@ def _mormol(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.morphological.mpls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.morphological.mpls, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _mpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     lam: float = 1000000.0,
     p: float = 0.0,
@@ -877,8 +1019,7 @@ def _mpls(
         diff_order=diff_order,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -890,12 +1031,15 @@ def _mpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.morphological.mpspline, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _mpspline(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     lam: float = 10000.0,
     lam_smooth: float = 0.01,
@@ -917,8 +1061,7 @@ def _mpspline(
         diff_order=diff_order,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -930,10 +1073,15 @@ def _mpspline(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.morphological.mwmv, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.morphological.mwmv, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _mwmv(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     smooth_half_window: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
@@ -943,8 +1091,7 @@ def _mwmv(
         smooth_half_window=smooth_half_window,
         half_window=half_window,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -956,12 +1103,15 @@ def _mwmv(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.morphological.rolling_ball, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _rolling_ball(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     smooth_half_window: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
@@ -971,8 +1121,7 @@ def _rolling_ball(
         smooth_half_window=smooth_half_window,
         half_window=half_window,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -984,10 +1133,15 @@ def _rolling_ball(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.morphological.tophat, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.morphological.tophat, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _tophat(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     baseline, params = pybaselines.morphological.tophat(
@@ -995,8 +1149,7 @@ def _tophat(
         x_data=x_data,
         half_window=half_window,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 MORPHOLOGICAL_NODE_SHELF = Shelf(
@@ -1027,12 +1180,15 @@ MORPHOLOGICAL_NODE_SHELF = Shelf(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.spline.corner_cutting, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _corner_cutting(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     max_iter: int = 100,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
     baseline, params = pybaselines.spline.corner_cutting(
@@ -1040,8 +1196,7 @@ def _corner_cutting(
         x_data=x_data,
         max_iter=max_iter,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1053,10 +1208,13 @@ def _corner_cutting(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.spline.irsqr, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.spline.irsqr, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _irsqr(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     quantile: float = 0.05,
     num_knots: int = 100,
     spline_degree: int = 3,
@@ -1078,8 +1236,7 @@ def _irsqr(
         weights=weights,
         eps=eps,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1091,10 +1248,15 @@ def _irsqr(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.spline.mixture_model, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.spline.mixture_model, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _mixture_model(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 100000.0,
     p: float = 0.01,
     num_knots: int = 100,
@@ -1120,8 +1282,7 @@ def _mixture_model(
         weights=weights,
         num_bins=num_bins,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1133,12 +1294,15 @@ def _mixture_model(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.spline.pspline_airpls, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _pspline_airpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000.0,
     num_knots: int = 100,
     spline_degree: int = 3,
@@ -1158,8 +1322,7 @@ def _pspline_airpls(
         tol=tol,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1171,10 +1334,15 @@ def _pspline_airpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.spline.pspline_arpls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.spline.pspline_arpls, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _pspline_arpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000.0,
     num_knots: int = 100,
     spline_degree: int = 3,
@@ -1194,8 +1362,7 @@ def _pspline_arpls(
         tol=tol,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1207,10 +1374,15 @@ def _pspline_arpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.spline.pspline_asls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.spline.pspline_asls, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _pspline_asls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000.0,
     p: float = 0.01,
     num_knots: int = 100,
@@ -1232,8 +1404,7 @@ def _pspline_asls(
         tol=tol,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1245,10 +1416,15 @@ def _pspline_asls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.spline.pspline_aspls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.spline.pspline_aspls, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _pspline_aspls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 10000.0,
     num_knots: int = 100,
     spline_degree: int = 3,
@@ -1270,8 +1446,7 @@ def _pspline_aspls(
         weights=weights,
         alpha=alpha,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1283,12 +1458,15 @@ def _pspline_aspls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.spline.pspline_derpsalsa, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _pspline_derpsalsa(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 100.0,
     p: float = 0.01,
     k: Optional[float] = None,
@@ -1316,8 +1494,7 @@ def _pspline_derpsalsa(
         smooth_half_window=smooth_half_window,
         num_smooths=num_smooths,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1329,10 +1506,15 @@ def _pspline_derpsalsa(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.spline.pspline_drpls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.spline.pspline_drpls, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _pspline_drpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000.0,
     eta: float = 0.5,
     num_knots: int = 100,
@@ -1354,8 +1536,7 @@ def _pspline_drpls(
         tol=tol,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1367,12 +1548,15 @@ def _pspline_drpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.spline.pspline_iarpls, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _pspline_iarpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000.0,
     num_knots: int = 100,
     spline_degree: int = 3,
@@ -1392,8 +1576,7 @@ def _pspline_iarpls(
         tol=tol,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1405,10 +1588,15 @@ def _pspline_iarpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.spline.pspline_iasls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.spline.pspline_iasls, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _pspline_iasls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 10.0,
     p: float = 0.01,
     lam_1: float = 0.0001,
@@ -1432,8 +1620,7 @@ def _pspline_iasls(
         tol=tol,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1445,10 +1632,15 @@ def _pspline_iasls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.spline.pspline_mpls, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.spline.pspline_mpls, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _pspline_mpls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     lam: float = 1000.0,
     p: float = 0.0,
@@ -1472,8 +1664,7 @@ def _pspline_mpls(
         tol=tol,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1485,12 +1676,15 @@ def _pspline_mpls(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.spline.pspline_psalsa, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _pspline_psalsa(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000.0,
     p: float = 0.5,
     k: Optional[float] = None,
@@ -1514,8 +1708,7 @@ def _pspline_psalsa(
         tol=tol,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 SPLINE_NODE_SHELF = Shelf(
@@ -1549,10 +1742,13 @@ SPLINE_NODE_SHELF = Shelf(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.smooth.ipsa, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.smooth.ipsa, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _ipsa(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     max_iter: int = 500,
     tol: Optional[float] = None,
@@ -1568,8 +1764,7 @@ def _ipsa(
         tol=tol,
         original_criteria=original_criteria,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1581,10 +1776,15 @@ def _ipsa(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.smooth.noise_median, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.smooth.noise_median, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _noise_median(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     smooth_half_window: Optional[int] = None,
     sigma: Optional[float] = None,
@@ -1596,8 +1796,7 @@ def _noise_median(
         half_window=half_window,
         sigma=sigma,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 class Side(fn.DataEnum):
@@ -1615,10 +1814,13 @@ class Side(fn.DataEnum):
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.smooth.ria, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.smooth.ria, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _ria(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     max_iter: int = 500,
     tol: float = 0.01,
@@ -1639,8 +1841,7 @@ def _ria(
         height_scale=height_scale,
         sigma_scale=sigma_scale,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1652,10 +1853,13 @@ def _ria(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.smooth.snip, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.smooth.snip, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _snip(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     decreasing: bool = False,
     smooth_half_window: Optional[int] = None,
     filter_order: int = 2,
@@ -1667,8 +1871,7 @@ def _snip(
         smooth_half_window=smooth_half_window,
         filter_order=filter_order,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1680,10 +1883,13 @@ def _snip(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.smooth.swima, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(pybaselines.smooth.swima, wrapper_attribute="__fnwrapped__")
+@baselinewrapper
 def _swima(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     min_half_window: int = 3,
     max_half_window: Optional[int] = None,
     smooth_half_window: Optional[int] = None,
@@ -1695,8 +1901,7 @@ def _swima(
         smooth_half_window=smooth_half_window,
         max_half_window=max_half_window,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 SMOOTH_NODE_SHELF = Shelf(
@@ -1716,12 +1921,15 @@ SMOOTH_NODE_SHELF = Shelf(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.classification.cwt_br, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _cwt_br(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     poly_order: int = 5,
     scale: Optional[np.ndarray] = None,
     num_std: float = 1.0,
@@ -1743,8 +1951,7 @@ def _cwt_br(
         symmetric=symmetric,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1756,12 +1963,15 @@ def _cwt_br(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.classification.dietrich, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _dietrich(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     smooth_half_window: Optional[int] = None,
     interp_half_window: int = 5,
     poly_order: int = 5,
@@ -1785,8 +1995,7 @@ def _dietrich(
         return_coef=return_coef,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1798,10 +2007,15 @@ def _dietrich(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.classification.fabc, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.classification.fabc, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _fabc(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     lam: float = 1000000.0,
     scale: Optional[np.ndarray] = None,
     num_std: float = 3.0,
@@ -1821,8 +2035,7 @@ def _fabc(
         weights_as_mask=weights_as_mask,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1834,12 +2047,15 @@ def _fabc(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.classification.fastchrom, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _fastchrom(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     threshold: Optional[float] = None,
     min_fwhm: Optional[int] = None,
@@ -1861,8 +2077,7 @@ def _fastchrom(
         interp_half_window=interp_half_window,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1874,12 +2089,15 @@ def _fastchrom(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.classification.golotvin, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _golotvin(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     num_std: float = 2.0,
     sections: int = 32,
@@ -1901,8 +2119,7 @@ def _golotvin(
         interp_half_window=interp_half_window,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1914,12 +2131,15 @@ def _golotvin(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.classification.rubberband, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _rubberband(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     segments: Union[int, np.ndarray] = 1,
     lam: Optional[float] = None,
     diff_order: int = 2,
@@ -1935,8 +2155,7 @@ def _rubberband(
         smooth_half_window=smooth_half_window,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -1948,12 +2167,15 @@ def _rubberband(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.classification.std_distribution, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _std_distribution(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     half_window: Optional[int] = None,
     interp_half_window: int = 5,
     fill_half_window: int = 3,
@@ -1971,8 +2193,7 @@ def _std_distribution(
         num_std=num_std,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 CLASSIFICATION_NODE_SHELF = Shelf(
@@ -2005,12 +2226,15 @@ class Method(fn.DataEnum):
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.optimizers.adaptive_minmax, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _adaptive_minmax(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     poly_order: Optional[Union[int, List[int]]] = None,
     method: Method = Method.modpoly,
     constrained_fraction: Union[float, List[float]] = 0.01,
@@ -2029,8 +2253,7 @@ def _adaptive_minmax(
         estimation_poly_order=estimation_poly_order,
         weights=weights,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 class MethodColab(fn.DataEnum):
@@ -2054,12 +2277,15 @@ class MethodColab(fn.DataEnum):
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.optimizers.collab_pls, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _collab_pls(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     average_dataset: bool = True,
     method: MethodColab = MethodColab.asls,
 ) -> Tuple[np.ndarray, np.ndarray, dict]:
@@ -2070,8 +2296,7 @@ def _collab_pls(
         method=method,
         average_dataset=average_dataset,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 class MethodAll(fn.DataEnum):
@@ -2131,10 +2356,15 @@ class MethodAll(fn.DataEnum):
         {"name": "params"},
     ],
 )
-@controlled_wrapper(pybaselines.optimizers.custom_bc, wrapper_attribute="__fnwrapped__")
+@fn.controlled_wrapper(
+    pybaselines.optimizers.custom_bc, wrapper_attribute="__fnwrapped__"
+)
+@baselinewrapper
 def _custom_bc(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     sampling: Union[int, np.ndarray] = 1,
     lam: Optional[float] = None,
     diff_order: int = 2,
@@ -2149,8 +2379,7 @@ def _custom_bc(
         method=method,
         sampling=sampling,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
 
 
 @NodeDecorator(
@@ -2162,12 +2391,15 @@ def _custom_bc(
         {"name": "params"},
     ],
 )
-@controlled_wrapper(
+@fn.controlled_wrapper(
     pybaselines.optimizers.optimize_extended_range, wrapper_attribute="__fnwrapped__"
 )
+@baselinewrapper
 def _optimize_extended_range(
     data: np.ndarray,
     x_data: Optional[np.ndarray] = None,
+    regions: Optional[np.ndarray] = None,
+    estimate_window: Optional[float] = None,
     side: Side = Side.both,
     width_scale: float = 0.1,
     height_scale: float = 1.0,
@@ -2190,8 +2422,8 @@ def _optimize_extended_range(
         max_value=max_value,
         step=step,
     )
-    baseline_corrected = data - baseline
-    return baseline_corrected, baseline, params
+    return baseline, params
+    return baseline, params
 
 
 OPTIMIZERS_NODE_SHELF = Shelf(
@@ -2201,8 +2433,17 @@ OPTIMIZERS_NODE_SHELF = Shelf(
     description="Fits a optimizers baseline",
 )
 
+estimate_baseline_regions_node = fn.NodeDecorator(
+    "pybaselines.baseline.estimate_baseline_regions",
+    name="Estimate baseline regions",
+    outputs=[
+        {"name": "baseline"},
+        {"name": "is_baseline"},
+    ],
+)(estimate_baseline_regions)
+
 BASELINE_NODE_SHELF = Shelf(
-    nodes=[],
+    nodes=[estimate_baseline_regions_node],
     subshelves=[
         POLYNOMIAL_NODE_SHELF,
         WHITTAKER_NODE_SHELF,

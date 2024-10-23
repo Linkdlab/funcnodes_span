@@ -61,9 +61,13 @@ _SMOOTHING_MAPPER: Dict[str, Callable[[np.ndarray, int], np.ndarray]] = {
 }
 
 
-@NodeDecorator("span.basics.smooth", name="Smoothing")
+@NodeDecorator(
+    "span.basics.smooth",
+    name="Smoothing",
+    outputs=[{"name": "smoothed"}],
+)
 def _smooth(
-    array: np.ndarray,
+    y: np.ndarray,
     mode: SmoothMode = SmoothMode.SAVITZKY_GOLAY,
     window: Union[float, int] = 5,
     x: np.ndarray = None,
@@ -74,7 +78,7 @@ def _smooth(
     # If x is provided, the window is in x units and is converted to points using the median x difference.
 
     # Args:
-    #     array (np.ndarray): The input array to be smoothed.
+    #     y (np.ndarray): The input array to be smoothed.
     #     mode (SmoothMode): The smoothing mode to apply. Defaults to SmoothMode.SAVITZKY_GOLAY.
     #     window (int): The window size for the smoothing function. Defaults to 5.
     #     x (np.ndarray): The x values of the input array. Defaults to None.
@@ -95,7 +99,7 @@ def _smooth(
         window = window / med_xdiff
     window = int(window)
 
-    return _SMOOTHING_MAPPER[mode](array, window)
+    return _SMOOTHING_MAPPER[mode](y, window)
 
 
 # @NodeDecorator("span.basics.smooth.savgol", name="Savgol")
