@@ -5,6 +5,12 @@ from lmfit.model import ModelResult
 from lmfit.models import GaussianModel
 from .peaks import PeakProperties
 from funcnodes_lmfit.model import AUTOMODELMAP
+import funcnodes as fn
+
+AutoModelEnum = fn.DataEnum("AutoModelEnum", AUTOMODELMAP)
+# class AutoModelEnum(fn.DataEnum):
+#     GaussianModel = AUTOMODELMAP["GaussianModel"]
+#     LorentzianModel = AUTOMODELMAP["LorentzianModel"]
 
 
 def group_signals(
@@ -106,11 +112,11 @@ def fit_local_peak(
         Model: The fitted model for the peak.
     """
 
-    if isinstance(model_class, str):
-        model_class = AUTOMODELMAP[model_class]
+    x = np.asarray(x)
+    y = np.asarray(y)
 
-    if isinstance(incomplete_peak_model_class, str):
-        incomplete_peak_model_class = AUTOMODELMAP[incomplete_peak_model_class]
+    model_class = AutoModelEnum.v(model_class)
+    incomplete_peak_model_class = AutoModelEnum.v(incomplete_peak_model_class)
 
     pf = f"p{peak.id}_"
     model = model_class(prefix=pf)  # Initialize the model
@@ -129,11 +135,8 @@ def fit_local_peak(
     if peak.yfull is None:
         peak.yfull = y
 
-    if isinstance(model_class, str):
-        model_class = AUTOMODELMAP[model_class]
-
-    if isinstance(incomplete_peak_model_class, str):
-        incomplete_peak_model_class = AUTOMODELMAP[incomplete_peak_model_class]
+    model_class = AutoModelEnum.v(model_class)
+    incomplete_peak_model_class = AutoModelEnum.v(incomplete_peak_model_class)
 
     if np.abs(yf[-1] - yf[0]) > incomplete_threshold * (local_max - local_min):
         # Handle incomplete peak by extending the range and filling gaps
@@ -226,11 +229,11 @@ def fit_peak_group(
         Model: The fitted model for the group of peaks.
     """
 
-    if isinstance(model_class, str):
-        model_class = AUTOMODELMAP[model_class]
+    x = np.asarray(x)
+    y = np.asarray(y)
 
-    if isinstance(incomplete_peak_model_class, str):
-        incomplete_peak_model_class = AUTOMODELMAP[incomplete_peak_model_class]
+    model_class = AutoModelEnum.v(model_class)
+    incomplete_peak_model_class = AutoModelEnum.v(incomplete_peak_model_class)
 
     groupmodel = None
     most_left = min([p.i_index for p in peaks])  # Find the leftmost index in the group
@@ -278,12 +281,12 @@ def fit_peaks(
     peaks: List[PeakProperties],
     x: np.ndarray,
     y: np.ndarray,
-    model_class: Type[Model] = GaussianModel,
+    model_class: AutoModelEnum = AutoModelEnum.GaussianModel,
     filter_negatives: bool = True,
     baseline_factor: float = 0.001,
     incomplete_threshold: float = 0.8,
     incomplete_x_extend: float = 2.0,
-    incomplete_peak_model_class: Type[Model] = GaussianModel,
+    incomplete_peak_model_class: AutoModelEnum = AutoModelEnum.GaussianModel,
     iter_cb=None,
 ) -> Tuple[List[PeakProperties], Model, ModelResult]:
     """
@@ -337,11 +340,10 @@ def fit_peaks(
     Returns:
         Model: The fitted model for the global signal.
     """
-    if isinstance(model_class, str):
-        model_class = AUTOMODELMAP[model_class]
-
-    if isinstance(incomplete_peak_model_class, str):
-        incomplete_peak_model_class = AUTOMODELMAP[incomplete_peak_model_class]
+    model_class = AutoModelEnum.v(model_class)
+    incomplete_peak_model_class = AutoModelEnum.v(incomplete_peak_model_class)
+    x = np.asarray(x)
+    y = np.asarray(y)
 
     if len(peaks) == 0:
         raise ValueError("No peaks provided for fitting.")
@@ -381,3 +383,25 @@ def fit_peaks(
         peak.model = get_submodel_by_prefix(global_model, f"p{peak.id}_")
 
     return peaks, global_model, global_fit
+
+
+def peaks_from_fitted(fitted_peaks: List[PeakProperties]) -> List[PeakProperties]:
+    peaks = []
+    from .peak_analysis import peak_finder  # noaq Avoid circular import
+
+    for p in fitted_peaks:
+        model = p.model
+        mparams = model.make_params()
+        y = model.eval(x=p.xfull, params=mparams)
+        pf: List[PeakProperties] = peak_finder.o_func(y=y, x=p.xfull)[0]
+        if len(pf) != 1:
+            raise ValueError("Expected one peak")
+        pf = pf[0]
+        pf._id = f"fitted_{p.id}"
+        pf.model = model
+        p.add_serializable_property("model", str(model))
+        for k, v in mparams.items():
+            p.add_serializable_property(k.replace(model.prefix, ""), v.value)
+        peaks.append(pf)
+
+    return peaks

@@ -16,6 +16,6 @@ estimate_noise_node = fn.NodeDecorator(
 CURVES_NODE_SHELF = fn.Shelf(
     nodes=[knee_point_detection_node, estimate_noise_node],
     subshelves=[],
-    name="Smoothing",
-    description="Smoothing of the spectra",
+    name="Curves",
+    description="Analysis of curves and spectra",
 )

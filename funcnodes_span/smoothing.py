@@ -93,12 +93,14 @@ def _smooth(
 
     if mode not in _SMOOTHING_MAPPER.keys():
         raise ValueError(f"Unsupported smoothing mode: {mode}")
-
+    y = np.asarray(y)
     if x is not None:
+        x = np.asarray(x)
         med_xdiff = np.nanmedian(np.diff(x))
         window = window / med_xdiff
     window = int(window)
-
+    if window == 0:
+        return y.copy()
     return _SMOOTHING_MAPPER[mode](y, window)
 
 
