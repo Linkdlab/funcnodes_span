@@ -10,6 +10,7 @@ from funcnodes_span.peak_analysis import (
     plot_peak,
     plot_fitted_peaks,
     force_peak_finder,
+    peaks_from_fitted_node,
     fit_peak_node,
 )
 from scipy.datasets import electrocardiogram
@@ -193,4 +194,33 @@ class TestForcePeakFinder(unittest.IsolatedAsyncioTestCase):
             node.outputs["model"].value.make_params()["pp1_center"].value,
             10,
             node.outputs["model"].value.make_params(),
+        )
+
+    async def test_peaks_from_fitted(self):
+        peaks: fn.Node = peak_finder()
+        peaks.inputs["y"].value = electrocardiogram()[2000:4000]
+        peaks.inputs["x"].value = np.arange(len(electrocardiogram()[2000:4000]))
+        peaks.inputs["height"].value = 2
+        self.assertIsInstance(peaks, fn.Node)
+        await peaks
+        self.assertIsInstance(peaks.outputs["peaks"].value[0], PeakProperties)
+        fit: fn.Node = fit_peaks_node()
+        fit.inputs["y"].value = electrocardiogram()[2000:4000]
+        fit.inputs["x"].value = np.arange(len(electrocardiogram()[2000:4000]))
+        fit.inputs["peaks"].connect(peaks.outputs["peaks"])
+
+        self.assertIsInstance(fit, fn.Node)
+        await fit
+        fitted_peaks = fit.outputs["fitted_peaks"]
+        self.assertIsInstance(fitted_peaks.value[0], PeakProperties)
+
+        _peaks_from_fitted_node = peaks_from_fitted_node()
+        _peaks_from_fitted_node.inputs["fitted_peaks"].connect(
+            fit.outputs["fitted_peaks"]
+        )
+
+        await _peaks_from_fitted_node
+
+        self.assertIsInstance(
+            _peaks_from_fitted_node.outputs["peaks"].value[0], PeakProperties
         )

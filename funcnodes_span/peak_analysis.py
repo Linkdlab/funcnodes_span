@@ -12,7 +12,13 @@ import plotly.graph_objs as go
 from .normalization import density_normalization
 from .peaks import PeakProperties
 
-from .fitting import fit_peaks, AUTOMODELMAP, fit_local_peak
+from .fitting import fit_peaks, AUTOMODELMAP, fit_local_peak, peaks_from_fitted
+
+# make enum from AUTOMODELMAP
+AutoModelEnum = fn.DataEnum(
+    "AutoModelEnum",
+    AUTOMODELMAP,
+)
 
 
 @NodeDecorator(
@@ -547,18 +553,47 @@ fit_peak_node = fn.NodeDecorator(
     id="span.peaks.fit_peak",
     name="Fit Peak",
     outputs=[{"name": "fitted_peak"}, {"name": "model"}, {"name": "fit_result"}],
-    # separate_process=True,
+    separate_process=True,
 )(fit_local_peak)
+
 
 fit_peaks_node = fn.NodeDecorator(
     id="span.peaks.fit_peaks",
     name="Fit Peaks",
     outputs=[{"name": "fitted_peaks"}, {"name": "model"}, {"name": "fit_results"}],
-    default_io_options={
-        "modelname": {"value_options": {"options": list(AUTOMODELMAP.keys())}},
-    },
-    separate_process=True,
+    # separate_process=True,
 )(fit_peaks)
+# @fn.controlled_wrapper(fit_peaks, wrapper_attribute="__fnwrapped__")
+# def fit_peaks_node(
+#     peaks: List[PeakProperties],
+#     x: np.ndarray,
+#     y: np.ndarray,
+#     model_class: AutoModelEnum = AutoModelEnum.v("GaussianModel"),
+#     filter_negatives: bool = True,
+#     baseline_factor: float = 0.001,
+#     incomplete_threshold: float = 0.8,
+#     incomplete_x_extend: float = 2.0,
+#     incomplete_peak_model_class: AutoModelEnum = AutoModelEnum.v("GaussianModel"),
+# ) -> Tuple[List[PeakProperties], Model, ModelResult]:
+#     return fit_peaks(
+#         peaks,
+#         x,
+#         y,
+#         model_class=AutoModelEnum.v(model_class),
+#         filter_negatives=filter_negatives,
+#         baseline_factor=baseline_factor,
+#         incomplete_threshold=incomplete_threshold,
+#         incomplete_x_extend=incomplete_x_extend,
+#         incomplete_peak_model_class=AutoModelEnum.v(incomplete_peak_model_class),
+#     )
+
+
+peaks_from_fitted_node = fn.NodeDecorator(
+    id="span.peaks.peaks_from_fitted",
+    name="Peaks from fitted",
+    description="converts the fit data in peaks to regular peaks",
+    outputs=[{"name": "peaks"}],
+)(peaks_from_fitted)
 
 PEAKS_NODE_SHELF = Shelf(
     nodes=[
@@ -568,6 +603,7 @@ PEAKS_NODE_SHELF = Shelf(
         plot_peaks,
         fit_peaks_node,
         fit_peak_node,
+        peaks_from_fitted_node,
         plot_fitted_peaks,
         plot_peak,
     ],

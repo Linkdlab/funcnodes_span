@@ -47,7 +47,7 @@ def knee_point_detection(x, y) -> Tuple[int, float, float]:
 
 
 def estimate_noise(
-    x, y, is_baseline_region: Optional[np.ndarray] = None, std_factor=3
+    x, y, is_baseline_region: Optional[np.ndarray] = None, std_factor: float = 3
 ) -> float:
     """
     Estimate the noise level in a signal.
