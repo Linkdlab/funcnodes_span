@@ -1,1 +1,1 @@
-Spectral Peak ANalysis (SPAN) for funcnodes
+SPectral ANalysis (SPAN) for funcnodes

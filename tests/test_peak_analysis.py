@@ -15,7 +15,7 @@ from funcnodes_span.peak_analysis import (
 )
 from scipy.datasets import electrocardiogram
 import plotly.graph_objects as go
-from funcnodes_basic.lists import GetIndexNode
+from funcnodes_basic.lists import list_get
 
 fn.config.IN_NODE_TEST = True
 
@@ -54,9 +54,9 @@ class TestPeakFinder(unittest.IsolatedAsyncioTestCase):
         peaks.inputs["x"].value = np.arange(len(electrocardiogram()[2000:4000]))
         peaks.inputs["height"].value = 2
 
-        idxnode = GetIndexNode()
+        idxnode = list_get()
         idxnode.inputs["index"].value = 0
-        idxnode.inputs["inputlist"].connect(peaks.outputs["peaks"])
+        idxnode.inputs["lst"].connect(peaks.outputs["peaks"])
 
         plotter = plot_peak()
 
@@ -157,7 +157,7 @@ class TestForcePeakFinder(unittest.IsolatedAsyncioTestCase):
 
         force_peaks: fn.Node = force_peak_finder()
 
-        force_peaks.inputs["basic_peaks"].value = peaks.outputs["peaks"].value
+        force_peaks.inputs["basic_peak"].value = peaks.outputs["peaks"].value[0]
 
         force_peaks.inputs["y"].value = y
         force_peaks.inputs["x"].value = x
