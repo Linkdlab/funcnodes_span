@@ -44,6 +44,7 @@ def group_signals(
     # Assign each peak to its respective group based on start and end indices
     for pi, p in enumerate(peaks):
         ingroup = (baseline_cut >= p.i_index) & (baseline_cut <= p.f_index)
+
         if ingroup.sum() == 0:
             ingroup[(baseline_cut >= p.i_index).argmax()] = True
 
@@ -62,6 +63,9 @@ def group_signals(
             current_peak_group = set()
         else:
             current_peak_group.update(pg)
+
+    if len(current_peak_group) > 0:
+        connected_peaks.append(list(current_peak_group))
 
     # Return a list of grouped PeakProperties
     return [[peaks[pi] for pi in cp] for cp in connected_peaks if len(cp) > 0]
@@ -111,7 +115,6 @@ def fit_local_peak(
     Returns:
         Model: The fitted model for the peak.
     """
-
     x = np.asarray(x)
     y = np.asarray(y)
 
@@ -135,13 +138,11 @@ def fit_local_peak(
     if peak.yfull is None:
         peak.yfull = y
 
-    model_class = AutoModelEnum.v(model_class)
-    incomplete_peak_model_class = AutoModelEnum.v(incomplete_peak_model_class)
-
     if np.abs(yf[-1] - yf[0]) > incomplete_threshold * (local_max - local_min):
         # Handle incomplete peak by extending the range and filling gaps
         m_complete = incomplete_peak_model_class()
         guess = m_complete.guess(data=yf, x=xf)
+        guess["center"].set(min=min(xf), max=max(xf))
         fr_complete = m_complete.fit(data=yf, x=xf, params=guess, iter_cb=iter_cb)
 
         fwhm = 2 * np.sqrt(2 * np.log(2)) * fr_complete.params["sigma"].value
@@ -350,10 +351,14 @@ def fit_peaks(
 
     # Group peaks based on the baseline factor
     connected_peaks = group_signals(x, y, peaks, baseline_factor=baseline_factor)
+    if len(connected_peaks) == 0:
+        raise ValueError("No peaks after grouping.")
 
     global_model = None
     # Fit each peak group
     for pg in connected_peaks:
+        if len(pg) == 0:
+            continue
         m = fit_peak_group(
             x,
             y,
@@ -370,6 +375,9 @@ def fit_peaks(
         else:
             # Combine models for all peak groups
             global_model += m
+
+    if global_model is None:
+        raise ValueError("No model created")
 
     # Fit the global model to the full data
     global_fit = global_model.fit(data=y, x=x, iter_cb=iter_cb)
