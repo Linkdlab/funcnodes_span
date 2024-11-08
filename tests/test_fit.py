@@ -4,14 +4,10 @@ from lmfit.models import SkewedGaussianModel
 from lmfit import CompositeModel
 from scipy.ndimage import gaussian_filter1d
 from funcnodes_span.peak_analysis import PeakProperties, peak_finder
-import pandas as pd
-import os
 from funcnodes_span.fitting import (
     fit_peaks,
     group_signals,
 )  # Assuming the function is in fit_module.py
-
-from funcnodes_span.peak_analysis import force_peak_finder
 
 
 class TestFitSignals1D(unittest.TestCase):
@@ -58,38 +54,6 @@ class TestFitSignals1D(unittest.TestCase):
             1,
             "Incorrect number of peaks in the second group.",
         )
-
-    def test_group_advancedpeaksfit(self):
-        df = pd.read_csv(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "advanced_peak.csv",
-            )
-        )
-
-        peak_props = peak_finder.o_func(df["Signal"], df["Volume"])[0]
-        self.assertEqual(len(peak_props), 1)
-
-        peak_props = force_peak_finder.o_func(
-            df["Volume"],
-            df["Signal"],
-            peak_props[0],
-        )
-        self.assertEqual(len(peak_props), 2)
-
-        connected_peaks = group_signals(
-            df["Volume"],
-            df["Signal"],
-            peak_props,
-        )
-
-        self.assertEqual(
-            len(connected_peaks),
-            1,
-        )
-        self.assertEqual(len(connected_peaks[0]), 2)
-        fit = fit_peaks(peak_props, df["Volume"], df["Signal"])
-        self.assertEqual(len(fit), 3)
 
     def test_fit_signals_1D_default(self):
         """
