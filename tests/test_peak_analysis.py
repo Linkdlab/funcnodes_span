@@ -56,7 +56,7 @@ class TestPeakFinder(unittest.IsolatedAsyncioTestCase):
 
         idxnode = list_get()
         idxnode.inputs["index"].value = 0
-        idxnode.inputs["inputlist"].connect(peaks.outputs["peaks"])
+        idxnode.inputs["lst"].connect(peaks.outputs["peaks"])
 
         plotter = plot_peak()
 
