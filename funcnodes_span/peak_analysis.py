@@ -2,7 +2,7 @@ from funcnodes import NodeDecorator, Shelf
 import funcnodes as fn
 import numpy as np
 from exposedfunctionality import controlled_wrapper
-from typing import Optional, List, Tuple, Union
+from typing import Optional, List, Tuple
 from scipy.signal import find_peaks
 from scipy.stats import norm
 from scipy import signal, interpolate
@@ -223,32 +223,32 @@ def interpolation_1d(
 def force_peak_finder(
     x: np.array,
     y: np.array,
-    basic_peaks: Union[List[PeakProperties], PeakProperties],
+    basic_peak: PeakProperties,
 ) -> List[PeakProperties]:
-    # """
-    # Identify and return the two peaks around the main peak in the given peaks dictionary.
+    """
+    Breaks down a given main peak into two individual peaks.
 
-    # Parameters:
-    # - peaks (dict): A dictionary containing peak information.
-    #                 It should have the keys 'peaks' and 'data'.
-    #                 'peaks' should contain a list of dictionaries with keys 'Initial index', 'Index',
-    #                  and 'Ending index'.
-    #                 'data' should contain arrays 'x' and 'y'.
+    The function works by calculating the first and second derivatives of the signal and
+    finding the local maxima and minima of the derivatives. It then determines which peak
+    is on the left and right side of the main peak by comparing the distance between the
+    main peak and the closest peak on either side.
 
-    # Returns:
-    # - dict: A dictionary containing information about the two identified peaks.
-    # """
-    if isinstance(basic_peaks, (list, np.ndarray, tuple)):
-        if len(basic_peaks) != 1:
-            raise ValueError(
-                "This method accepts one and only one main peak as an input."
-            )
-        basic_peaks = basic_peaks[0]
+    Parameters:
+    - x (np.array): The x-values of the signal.
+    - y (np.array): The y-values of the signal.
+    - basic_peak (PeakProperties): The main peak.
 
-    peaks = copy.deepcopy(basic_peaks)
-    main_peak_i_index = peaks.i_index
-    main_peak_r_index = peaks.index
-    main_peak_f_index = peaks.f_index
+    Returns:
+    - List[PeakProperties]: A list of two PeakProperties objects, one for each of the
+      individual peaks.
+    """
+    if not isinstance(basic_peak, PeakProperties):
+        raise TypeError("The basic peak must be a single PeakProperties object.")
+
+    peak = copy.deepcopy(basic_peak)
+    main_peak_i_index = peak.i_index
+    main_peak_r_index = peak.index
+    main_peak_f_index = peak.f_index
     y_array = y
     x_array = x
     # Calculate first and second derivatives
@@ -266,9 +266,9 @@ def force_peak_finder(
     max_pp = signal.argrelmax(y_array_pp)[0]
     # min_pp = signal.argrelmin(y_array_pp)[0]
 
-    # main_peak_i_index = peaks.i_index
-    # main_peak_r_index = peaks.index
-    # main_peak_f_index = peaks.f_index
+    # main_peak_i_index = peak.i_index
+    # main_peak_r_index = peak.index
+    # main_peak_f_index = peak.f_index
 
     # Determine which peak is on the left and right side of the main peak
     if (
@@ -306,10 +306,11 @@ def force_peak_finder(
     peak_lst = []
     peak_lst.append([peak1["I.Index"], peak1["R.Index"], peak1["F.Index"]])
     peak_lst.append([peak2["I.Index"], peak2["R.Index"], peak2["F.Index"]])
+
     peak_properties_list = []
     for peak_nr, peak in enumerate(peak_lst):
         peak_properties = PeakProperties(
-            id=basic_peaks.id + f"_{peak_nr + 1}",
+            id=basic_peak.id + f"_{peak_nr + 1}",
             i_index=peak[0],
             index=peak[1],
             f_index=peak[2],

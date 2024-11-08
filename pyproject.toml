@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "funcnodes-span"
-version = "0.3.1"
-description = "Spectral Peak ANalysis (SPAN) for funcnodes"
+version = "0.3.2"
+description = "SPectral ANalysis (SPAN) for funcnodes"
 authors = ["Kourosh Rezaei <kouroshrezaei90@gmail.com>"]
 readme = "README.md"
 license = "MIT"
