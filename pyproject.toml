@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "funcnodes-span"
-version = "0.3.2"
+version = "0.3.3"
 description = "SPectral ANalysis (SPAN) for funcnodes"
 authors = ["Kourosh Rezaei <kouroshrezaei90@gmail.com>"]
 readme = "README.md"

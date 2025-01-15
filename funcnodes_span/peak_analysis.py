@@ -329,7 +329,16 @@ def force_peak_finder(
     default_render_options={"data": {"src": "figure"}},
     outputs=[{"name": "figure"}],
 )
-def plot_peaks(x: np.array, y: np.array, peaks: List[PeakProperties]) -> go.Figure:
+def plot_peaks(
+    x: np.array,
+    y: np.array,
+    peaks: List[PeakProperties],
+    fill_rectangles: bool = True,
+    xaxis_title: str = "x",
+    yaxis_title: str = "y",
+    title: str = "",
+    show_legend: bool = True,
+) -> go.Figure:
     fig = go.Figure()
 
     # Set up line plot
@@ -355,14 +364,16 @@ def plot_peaks(x: np.array, y: np.array, peaks: List[PeakProperties]) -> go.Figu
                     peak.x_at_i_index,
                 ],
                 y=[plot_y_min, plot_y_min, peak_height, peak_height],
-                fill="toself",
-                fillcolor=peaks_colors[index % len(peaks_colors)],
-                opacity=0.3,
-                line=dict(width=0),
+                fill="toself" if fill_rectangles else None,
+                fillcolor=peaks_colors[index % len(peaks_colors)]
+                if fill_rectangles
+                else None,
+                opacity=0.3 if fill_rectangles else 1,
+                line=dict(width=0 if fill_rectangles else 2),
                 mode="lines",
                 name=f"Peak {peak.id}",
                 legendgroup=f"Peak {peak.id}",  # Group by Peak id
-                showlegend=True,
+                showlegend=show_legend,
             )
         )
         # Add an X marker at the exact peak position
@@ -390,14 +401,18 @@ def plot_peaks(x: np.array, y: np.array, peaks: List[PeakProperties]) -> go.Figu
                         dash="dash", color=peaks_colors[index % len(peaks_colors)]
                     ),
                     legendgroup=f"Peak {peak.id}",
+                    showlegend=show_legend,
                 ),
             )
 
     # Customize layout (axes labels and title can be added here if needed)
     fig.update_layout(
-        xaxis_title="x",
-        yaxis_title="y",
-        template="plotly_white",
+        xaxis_title=xaxis_title,
+        yaxis_title=yaxis_title,
+        title=title,
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=show_legend,
     )
 
     return fig
