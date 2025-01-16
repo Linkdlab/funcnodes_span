@@ -362,8 +362,9 @@ def plot_peaks(
                     peak.x_at_f_index,
                     peak.x_at_f_index,
                     peak.x_at_i_index,
+                    peak.x_at_i_index,
                 ],
-                y=[plot_y_min, plot_y_min, peak_height, peak_height],
+                y=[plot_y_min, plot_y_min, peak_height, peak_height, plot_y_min],
                 fill="toself" if fill_rectangles else None,
                 fillcolor=peaks_colors[index % len(peaks_colors)]
                 if fill_rectangles
@@ -413,6 +414,9 @@ def plot_peaks(
         plot_bgcolor="white",
         paper_bgcolor="white",
         showlegend=show_legend,
+        font=dict(family="Arial", size=14),
+        xaxis=dict(title_font=dict(size=16), tickfont=dict(size=14)),
+        # yaxis=dict(title_font=dict(size=16), tickfont=dict(size=14), tickformat=".2e"),
     )
 
     return fig
