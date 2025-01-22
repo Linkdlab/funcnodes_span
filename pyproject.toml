@@ -1,41 +1,52 @@
-[tool.poetry]
+[project]
 name = "funcnodes-span"
-version = "0.3.4"
+version = "0.3.6"
 description = "SPectral ANalysis (SPAN) for funcnodes"
-authors = ["Kourosh Rezaei <kouroshrezaei90@gmail.com>"]
 readme = "README.md"
-license = "MIT"
+classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "Intended Audience :: Education", "Intended Audience :: Science/Research", "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",]
+requires-python = ">=3.11"
+dependencies = [
+ "scipy",
+ "lmfit",
+ "funcnodes",
+ "funcnodes_numpy",
+ "funcnodes_pandas",
+ "funcnodes_plotly",
+ "pybaselines",
+ "funcnodes-lmfit",
+ "numba (>=0.61.0,<1.0.0)",
+]
+[[project.authors]]
+name = "Kourosh Rezaei"
+email = "kourosh.rezaei@linkdlab.de"
 
-[tool.poetry.urls]
-homepage  = "https://github.com/Linkdlab/funcnodes_span"
-source  = "https://github.com/Linkdlab/funcnodes_span"
-tracker  = "https://github.com/Linkdlab/funcnodes_span/issues"
+[[project.authors]]
+name = "Julian Kimmig"
+email = "julian.kimmig@linkdlab.de"
+
+[dependency-groups]
+dev = [
+ "funcnodes-module>=0.1.22",
+ "pooch>=1.8.2",
+ "pre-commit>=4.1.0",
+ "pytest>=8.3.4",
+]
+
+[project.license]
+text = "AGPL-3.0"
+
+[project.urls]
+homepage = "https://github.com/Linkdlab/funcnodes_span"
+source = "https://github.com/Linkdlab/funcnodes_span"
+tracker = "https://github.com/Linkdlab/funcnodes_span/issues"
 download = "https://pypi.org/project/funcnodes-span/#files"
 
-
-
-[tool.poetry.dependencies]
-python = ">=3.11"
-scipy = "*"
-lmfit = "*"
-funcnodes = "*"
-funcnodes_numpy = "*"
-funcnodes_pandas = "*"
-funcnodes_plotly = "*"
-pybaselines = "*"
-funcnodes-lmfit = "*"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-pre-commit = "*"
-funcnodes-module = "^0.1.19"
-pooch = "*"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.plugins."funcnodes.module"]
+[project.entry-points."funcnodes.module"]
 module = "funcnodes_span"
 shelf = "funcnodes_span:NODE_SHELF"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = [ "src",]

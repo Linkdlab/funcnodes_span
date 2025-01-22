@@ -7,12 +7,20 @@ from scipy.signal import find_peaks
 from scipy.stats import norm
 from scipy import signal, interpolate
 from scipy.ndimage import gaussian_filter1d
+from tqdm import tqdm
 import copy
 import plotly.graph_objs as go
 from .normalization import density_normalization
 from .peaks import PeakProperties
 
-from .fitting import fit_peaks, AUTOMODELMAP, fit_local_peak, peaks_from_fitted
+from .fitting import (
+    fit_peaks,
+    AUTOMODELMAP,
+    fit_local_peak,
+    peaks_from_fitted,
+    Model,
+    ModelResult,
+)
 
 # make enum from AUTOMODELMAP
 AutoModelEnum = fn.DataEnum(
@@ -577,35 +585,52 @@ fit_peak_node = fn.NodeDecorator(
 )(fit_local_peak)
 
 
-fit_peaks_node = fn.NodeDecorator(
+@fn.NodeDecorator(
     id="span.peaks.fit_peaks",
     name="Fit Peaks",
     outputs=[{"name": "fitted_peaks"}, {"name": "model"}, {"name": "fit_results"}],
-    # separate_process=True,
-)(fit_peaks)
-# @fn.controlled_wrapper(fit_peaks, wrapper_attribute="__fnwrapped__")
-# def fit_peaks_node(
-#     peaks: List[PeakProperties],
-#     x: np.ndarray,
-#     y: np.ndarray,
-#     model_class: AutoModelEnum = AutoModelEnum.v("GaussianModel"),
-#     filter_negatives: bool = True,
-#     baseline_factor: float = 0.001,
-#     incomplete_threshold: float = 0.8,
-#     incomplete_x_extend: float = 2.0,
-#     incomplete_peak_model_class: AutoModelEnum = AutoModelEnum.v("GaussianModel"),
-# ) -> Tuple[List[PeakProperties], Model, ModelResult]:
-#     return fit_peaks(
-#         peaks,
-#         x,
-#         y,
-#         model_class=AutoModelEnum.v(model_class),
-#         filter_negatives=filter_negatives,
-#         baseline_factor=baseline_factor,
-#         incomplete_threshold=incomplete_threshold,
-#         incomplete_x_extend=incomplete_x_extend,
-#         incomplete_peak_model_class=AutoModelEnum.v(incomplete_peak_model_class),
-#     )
+    separate_thread=True,
+)
+@fn.controlled_wrapper(fit_peaks, wrapper_attribute="__fnwrapped__")
+def fit_peaks_node(
+    peaks: List[PeakProperties],
+    x: np.ndarray,
+    y: np.ndarray,
+    model_class: AutoModelEnum = AutoModelEnum.GaussianModel,
+    filter_negatives: bool = True,
+    baseline_factor: float = 0.001,
+    incomplete_threshold: float = 0.8,
+    incomplete_x_extend: float = 2.0,
+    incomplete_peak_model_class: AutoModelEnum = AutoModelEnum.GaussianModel,
+    node: fn.Node = None,
+) -> Tuple[List[PeakProperties], Model, ModelResult]:
+    _tqdm_kwargs = {
+        "desc": "Fitting peaks",
+    }
+    if node is not None:
+        progress = node.progress(**_tqdm_kwargs)
+    else:
+        progress = tqdm(**_tqdm_kwargs)
+
+    def _cb(params, iter, resid, *args, **kws):
+        progress.update(1)
+
+    try:
+        result = fit_peaks(
+            peaks,
+            x,
+            y,
+            model_class=model_class,
+            filter_negatives=filter_negatives,
+            baseline_factor=baseline_factor,
+            incomplete_threshold=incomplete_threshold,
+            incomplete_x_extend=incomplete_x_extend,
+            incomplete_peak_model_class=incomplete_peak_model_class,
+            iter_cb=_cb,
+        )
+        return result
+    finally:
+        progress.close()
 
 
 peaks_from_fitted_node = fn.NodeDecorator(
