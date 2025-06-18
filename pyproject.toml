@@ -1,6 +1,6 @@
 [project]
 name = "funcnodes-span"
-version = "0.3.6"
+version = "0.3.7"
 description = "SPectral ANalysis (SPAN) for funcnodes"
 readme = "README.md"
 classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "Intended Audience :: Education", "Intended Audience :: Science/Research", "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",]
