@@ -1,10 +1,10 @@
 from funcnodes import NodeDecorator, Shelf
 import funcnodes as fn
+from funcnodes_span._curves import estimate_noise
 import numpy as np
 from exposedfunctionality import controlled_wrapper
 from typing import Optional, List, Tuple
 from scipy.signal import find_peaks
-from scipy.stats import norm
 from scipy import signal, interpolate
 from scipy.ndimage import gaussian_filter1d
 from tqdm import tqdm
@@ -119,12 +119,11 @@ def peak_finder(
     # Calculate the standard deviation of peak prominences
     rnd = np.random.RandomState(42)
     # Fit a normal distribution to the input array
-    mu, std = norm.fit(y)
+    noise = estimate_noise(x=x, y=_y) / noise_level
     if peaks is not None:
         try:
             # Add noise to the input array
-            noise = rnd.normal(mu / noise_level, std / noise_level, np.shape(y))
-            y = y + noise
+            y = y + rnd.normal(0, noise, np.shape(y))
 
             # Find the minimums in the copy of the input array
             mins, _ = find_peaks(-1 * y)
@@ -155,8 +154,7 @@ def peak_finder(
 
         except ValueError:
             # If an error occurs when adding noise to the input array, add stronger noise and try again
-            noise = rnd.normal(mu / 100, std / 100, np.shape(y))
-            y = y + noise
+            y = y + rnd.normal(0, noise * 100, np.shape(y))
             mins, _ = find_peaks(-1 * y)
             for peak in peaks:
                 right_min = mins[np.argmax(mins > peak)]
