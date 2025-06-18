@@ -26,6 +26,7 @@ email = "julian.kimmig@linkdlab.de"
 
 [dependency-groups]
 dev = [
+ "commitizen>=4.8.3",
  "funcnodes-module>=0.1.22",
  "pooch>=1.8.2",
  "pre-commit>=4.1.0",
@@ -50,3 +51,10 @@ shelf = "funcnodes_span:NODE_SHELF"
 
 [tool.setuptools.packages.find]
 where = [ "src",]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_scheme = "pep440"
+version_provider = "uv"
+update_changelog_on_bump = true
