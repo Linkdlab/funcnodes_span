@@ -270,6 +270,27 @@ def peak_finder(
                     if y[peak] > height:
                         peak_lst.append([left_min, peak, right_min])
 
+    # Optionally re-center peak indices based on selected source
+    if len(peak_lst) > 0:
+        for k, (i_idx, idx, f_idx) in enumerate(peak_lst):
+            i = max(0, int(i_idx))
+            f = min(len(_y) - 1, int(f_idx))
+            if f <= i:
+                continue
+            if index_source == "original" and on is not None:
+                # Use argmax on the original (or differently processed) signal within bounds
+                local_argmax = int(np.argmax(_y[i : f + 1])) + i
+                peak_lst[k] = [i_idx, local_argmax, f_idx]
+            elif index_source == "centroid":
+                # Center-of-mass within bounds on original signal
+                yy = _y[i : f + 1]
+                w = yy - np.min(yy)
+                w = np.maximum(w, 0)
+                if np.sum(w) > 0:
+                    cm = int(np.round(np.average(np.arange(i, f + 1), weights=w)))
+                    cm = int(np.clip(cm, i, f))
+                    peak_lst[k] = [i_idx, cm, f_idx]
+
     peak_properties_list = []
 
     for peak_nr, peak in enumerate(peak_lst):
