@@ -3,7 +3,7 @@ import funcnodes as fn
 from funcnodes_span._curves import estimate_noise
 import numpy as np
 from exposedfunctionality import controlled_wrapper
-from typing import Annotated, Optional, List, Tuple
+from typing import Annotated, Literal, Optional, List, Tuple
 from scipy.signal import find_peaks
 from scipy import signal, interpolate
 from scipy.ndimage import gaussian_filter1d
