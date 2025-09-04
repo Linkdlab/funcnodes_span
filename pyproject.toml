@@ -1,6 +1,6 @@
 [project]
 name = "funcnodes-span"
-version = "0.3.7"
+version = "1.0.0"
 description = "SPectral ANalysis (SPAN) for funcnodes"
 readme = "README.md"
 classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "Intended Audience :: Education", "Intended Audience :: Science/Research", "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",]
@@ -8,10 +8,11 @@ requires-python = ">=3.11"
 dependencies = [
  "scipy",
  "lmfit",
- "funcnodes",
- "funcnodes_numpy",
- "funcnodes_pandas",
- "funcnodes_plotly",
+ "funcnodes>=1.0.0",
+ "funcnodes-core>=1.0.4",
+ "funcnodes-numpy",
+ "funcnodes-pandas",
+ "funcnodes-plotly",
  "pybaselines",
  "funcnodes-lmfit>=0.2.0",
  "numba (>=0.61.0,<1.0.0)",
@@ -46,11 +47,13 @@ download = "https://pypi.org/project/funcnodes-span/#files"
 module = "funcnodes_span"
 shelf = "funcnodes_span:NODE_SHELF"
 
-[tool.setuptools.package-dir]
-"" = "src"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools.packages.find]
-where = [ "src",]
+[tool.hatch.build.targets.wheel]
+packages = ["src/funcnodes_span"]
+
 
 [tool.commitizen]
 name = "cz_conventional_commits"
