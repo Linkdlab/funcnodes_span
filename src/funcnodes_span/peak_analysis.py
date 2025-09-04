@@ -3,7 +3,7 @@ import funcnodes as fn
 from funcnodes_span._curves import estimate_noise
 import numpy as np
 from exposedfunctionality import controlled_wrapper
-from typing import Optional, List, Tuple
+from typing import Annotated, Literal, Optional, List, Tuple
 from scipy.signal import find_peaks
 from scipy import signal, interpolate
 from scipy.ndimage import gaussian_filter1d
@@ -32,25 +32,122 @@ AutoModelEnum = fn.DataEnum(
 @NodeDecorator(
     id="span.basics.peaks",
     name="Peak finder",
-    outputs=[{"name": "peaks"}, {"name": "norm_x"}, {"name": "norm_y"}],
 )
 @controlled_wrapper(find_peaks, wrapper_attribute="__fnwrapped__")
 def peak_finder(
-    y: np.ndarray,
-    x: Optional[np.ndarray] = None,
-    on: Optional[np.ndarray] = None,
-    noise_level: Optional[int] = None,
-    height: Optional[float] = None,
-    threshold: Optional[float] = None,
-    distance: Optional[float] = None,
-    prominence: Optional[float] = None,
-    width: Optional[float] = None,
-    wlen: Optional[int] = None,
-    rel_height: float = 0.05,
-    width_at_rel_height: float = 0.5,
-    plateau_size: Optional[int] = None,
-) -> Tuple[List[PeakProperties], np.ndarray, np.ndarray]:
-    """ """
+    y: Annotated[
+        np.ndarray,
+        fn.InputMeta(
+            description="Original 1D signal to analyze for peaks. If `x` is provided, must have same length."
+        ),
+    ],
+    x: Annotated[
+        Optional[np.ndarray],
+        fn.InputMeta(
+            description="Optional x-axis values (strictly increasing). If given, widths/distances/wlen/plateau_size are interpreted in x-units and signals are density-normalized; indices remain aligned."
+        ),
+    ] = None,
+    on: Annotated[
+        Optional[np.ndarray],
+        fn.InputMeta(
+            hidden=True,
+            description="Optional signal to use for detection (e.g., smoothed/denoised). Measurements/centering can still use the original `y`."
+        ),
+    ] = None,
+    index_source: Annotated[
+        Literal["original", "on", "centroid"],
+        fn.InputMeta(
+            hidden=True,
+            description="How to choose the peak center within [i,f]: 'original' uses argmax on `y`; 'on' keeps detection index; 'centroid' uses center-of-mass on `y`.",
+        ),
+    ] = "original",
+    noise_level: Annotated[
+        Optional[int],
+        fn.InputMeta(
+            hidden=True,
+            description="Scales synthetic noise added for valley detection. Effective σ ≈ estimate_noise(x,y)/noise_level. Larger values = less added noise. Default ~5000.",
+        ),
+    ] = None,
+    height: Annotated[
+        Optional[float],
+        fn.InputMeta(
+            hidden=True,
+            description="Minimum peak height for detection on the detection signal (`on` if given, else `y`). If None, uses `rel_height * max(detection signal)`.",
+        ),
+    ] = None,
+    threshold: Annotated[
+        Optional[float],
+        fn.InputMeta(
+            hidden=True,
+            description="Required vertical step to neighbors for a peak (same units as detection signal). See `scipy.signal.find_peaks`.",
+        ),
+    ] = None,
+    distance: Annotated[
+        Optional[float],
+        fn.InputMeta(
+            hidden=True,
+            description="Minimum horizontal distance between neighboring peaks. Interpreted in x-units if `x` is provided, otherwise in samples.",
+        ),
+    ] = None,
+    prominence: Annotated[
+        Optional[float],
+        fn.InputMeta(
+            hidden=True,
+            description="Minimum required prominence of peaks, computed on the detection signal. See `scipy.signal.find_peaks`.",
+        ),
+    ] = None,
+    width: Annotated[
+        Optional[float],
+        fn.InputMeta(
+            hidden=True,
+            description="Minimum peak width measured at `width_at_rel_height` of peak height. In x-units if `x` is provided, else in samples.",
+        ),
+    ] = None,
+    wlen: Annotated[
+        Optional[int],
+        fn.InputMeta(
+            hidden=True,
+            description="Window length used for prominence calculation. If `x` is provided, specify in x-units (internally converted to samples); otherwise in samples.",
+        ),
+    ] = None,
+    rel_height: Annotated[
+        float,
+        fn.InputMeta(
+            description="Fallback height factor. If `height` is None, detection height = `rel_height * max(detection signal)`."
+        ),
+    ] = 0.05,
+    width_at_rel_height: Annotated[
+        float,
+        fn.InputMeta(
+            hidden=True,
+            description="Relative height at which peak width is measured. 0.5 corresponds to FWHM. Passed to `find_peaks(rel_height=...)`.",
+        ),
+    ] = 0.5,
+    plateau_size: Annotated[
+        Optional[int],
+        fn.InputMeta(
+            hidden=True,
+            description="Minimum length of a flat-top (plateau) at the peak. In x-units if `x` is provided, else in samples. See `scipy.signal.find_peaks`.",
+        ),
+    ] = None,
+) -> Tuple[
+    Annotated[List[PeakProperties], fn.OutputMeta(description="Peak properties",name="peaks")],
+    Annotated[np.ndarray, fn.OutputMeta(description="Normalized X-axis values",name="norm_x")],
+    Annotated[np.ndarray, fn.OutputMeta(description="Normalized Y-axis values",name="norm_y")],
+]:
+    # Tuple[List[PeakProperties], np.ndarray, np.ndarray]:
+    """
+    Detect peaks on an optional processed signal and report peak bounds and center.
+
+    Parameters
+    - y: Original signal for reporting measurements.
+    - x: Optional x/axis values. If provided, density normalization preserves indices.
+    - on: Optional signal to use for detection (e.g., smoothed/denoised).
+    - index_source: How to choose peak center inside detected bounds:
+        * "original": argmax on original `_y` within [i,f] (default).
+        * "on": keep detection index as-is.
+        * "centroid": center-of-mass on `_y` within [i,f].
+    """
     peak_lst = []
 
     y = np.array(y, dtype=float)

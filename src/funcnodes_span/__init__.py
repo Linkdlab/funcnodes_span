@@ -7,7 +7,7 @@ from .baseline import BASELINE_NODE_SHELF as BASELINE
 from funcnodes_lmfit import NODE_SHELF as LMFIT_NODE_SHELF
 from .curves import CURVES_NODE_SHELF
 
-__version__ = "0.3.6"
+__version__ = "1.0.0"
 
 NODE_SHELF = fn.Shelf(
     name="Spectral Analysis",

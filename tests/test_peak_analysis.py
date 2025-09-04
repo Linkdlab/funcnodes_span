@@ -61,12 +61,17 @@ class TestPeakFinder(unittest.IsolatedAsyncioTestCase):
         plotter = plot_peak()
 
         plotter.inputs["peak"].connect(idxnode.outputs["element"])
+        print("AAA",peaks.inputs["y"].is_connected(),plotter.inputs["y"].is_connected())
         plotter.inputs["y"].forwards_from(peaks.inputs["y"])
         plotter.inputs["x"].forwards_from(peaks.inputs["x"])
 
         await fn.run_until_complete(peaks, plotter, idxnode)
 
         self.assertIsInstance(plotter.outputs["figure"].value, go.Figure)
+
+    async def test_peak_finder_annotations(self):
+        n = peak_finder()
+        assert n["on"].hidden
 
 
 class TestInterpolation(unittest.IsolatedAsyncioTestCase):
