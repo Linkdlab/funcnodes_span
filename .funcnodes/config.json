@@ -1,0 +1,29 @@
+{
+  "env_dir": "/Users/kouroshmini/.funcnodes/env",
+  "worker_manager": {
+    "host": "localhost",
+    "port": 9380
+  },
+  "frontend": {
+    "port": 8000,
+    "host": "localhost"
+  },
+  "nodes": {
+    "default_pretrigger_delay": 0.01
+  },
+  "logging": {
+    "handler": {
+      "console": {
+        "handlerclass": "logging.StreamHandler",
+        "options": {}
+      },
+      "file": {
+        "handlerclass": "logging.handlers.RotatingFileHandler",
+        "options": {
+          "maxBytes": 5242880,
+          "backupCount": 5
+        }
+      }
+    }
+  }
+}
