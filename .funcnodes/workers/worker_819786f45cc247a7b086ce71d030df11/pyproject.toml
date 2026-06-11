@@ -1,0 +1,15 @@
+[project]
+name = "worker-819786f45cc247a7b086ce71d030df11"
+version = "0.1.0"
+description = "A Funcnodes worker environment"
+requires-python = ">=3.11"
+dependencies = [
+    "funcnodes>=1.0.2",
+    "funcnodes-core>=1.0.5",
+    "funcnodes-files>=1.0.0",
+    "funcnodes-images>=0.2.6",
+    "funcnodes-pandas>=0.4.0",
+    "funcnodes-plotly>=1.0.0",
+    "funcnodes-worker>=1.0.0",
+    "pip>=25.2",
+]

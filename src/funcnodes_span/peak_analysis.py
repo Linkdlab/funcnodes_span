@@ -44,96 +44,116 @@ def peak_finder(
     x: Annotated[
         Optional[np.ndarray],
         fn.InputMeta(
-            description="Optional x-axis values (strictly increasing). If given, widths/distances/wlen/plateau_size are interpreted in x-units and signals are density-normalized; indices remain aligned."
+            description="Optional x-axis values (strictly increasing). "
+            "If given, widths/distances/wlen/plateau_size are "
+            "interpreted in x-units and signals are density-normalized; indices remain aligned.",
         ),
     ] = None,
     on: Annotated[
         Optional[np.ndarray],
         fn.InputMeta(
             hidden=True,
-            description="Optional signal to use for detection (e.g., smoothed/denoised). Measurements/centering can still use the original `y`."
+            description="Optional signal to use for detection (e.g., smoothed/denoised). "
+            "Measurements/centering can still use the original `y`.",
         ),
     ] = None,
     index_source: Annotated[
         Literal["original", "on", "centroid"],
         fn.InputMeta(
             hidden=True,
-            description="How to choose the peak center within [i,f]: 'original' uses argmax on `y`; 'on' keeps detection index; 'centroid' uses center-of-mass on `y`.",
+            description="How to choose the peak center within [i,f]: 'original' uses argmax on `y`; "
+            "'on' keeps detection index; 'centroid' uses center-of-mass on `y`.",
         ),
     ] = "original",
     noise_level: Annotated[
         Optional[int],
         fn.InputMeta(
             hidden=True,
-            description="Scales synthetic noise added for valley detection. Effective σ ≈ estimate_noise(x,y)/noise_level. Larger values = less added noise. Default ~5000.",
+            description="Scales synthetic noise added for valley detection. Effective "
+            "σ ≈ estimate_noise(x,y)/noise_level. Larger values = less added noise. Default ~5000.",
         ),
     ] = None,
     height: Annotated[
         Optional[float],
         fn.InputMeta(
             hidden=True,
-            description="Minimum peak height for detection on the detection signal (`on` if given, else `y`). If None, uses `rel_height * max(detection signal)`.",
+            description="Minimum peak height for detection on the detection signal (`on` if given, else `y`)"
+            ". If None, uses `rel_height * max(detection signal)`.",
         ),
     ] = None,
     threshold: Annotated[
         Optional[float],
         fn.InputMeta(
             hidden=True,
-            description="Required vertical step to neighbors for a peak (same units as detection signal). See `scipy.signal.find_peaks`.",
+            description="Required vertical step to neighbors for a peak "
+            "(same units as detection signal). See `scipy.signal.find_peaks`.",
         ),
     ] = None,
     distance: Annotated[
         Optional[float],
         fn.InputMeta(
             hidden=True,
-            description="Minimum horizontal distance between neighboring peaks. Interpreted in x-units if `x` is provided, otherwise in samples.",
+            description="Minimum horizontal distance between neighboring peaks. "
+            "Interpreted in x-units if `x` is provided, otherwise in samples.",
         ),
     ] = None,
     prominence: Annotated[
         Optional[float],
         fn.InputMeta(
             hidden=True,
-            description="Minimum required prominence of peaks, computed on the detection signal. See `scipy.signal.find_peaks`.",
+            description="Minimum required prominence of peaks, computed on the "
+            "detection signal. See `scipy.signal.find_peaks`.",
         ),
     ] = None,
     width: Annotated[
         Optional[float],
         fn.InputMeta(
             hidden=True,
-            description="Minimum peak width measured at `width_at_rel_height` of peak height. In x-units if `x` is provided, else in samples.",
+            description="Minimum peak width measured at `width_at_rel_height` of peak height. "
+            "In x-units if `x` is provided, else in samples.",
         ),
     ] = None,
     wlen: Annotated[
         Optional[int],
         fn.InputMeta(
             hidden=True,
-            description="Window length used for prominence calculation. If `x` is provided, specify in x-units (internally converted to samples); otherwise in samples.",
+            description="Window length used for prominence calculation. If `x` is provided, "
+            "specify in x-units (internally converted to samples); otherwise in samples.",
         ),
     ] = None,
     rel_height: Annotated[
         float,
         fn.InputMeta(
-            description="Fallback height factor. If `height` is None, detection height = `rel_height * max(detection signal)`."
+            description="Fallback height factor. If `height` is None, detection height = "
+            "`rel_height * max(detection signal)`.",
         ),
     ] = 0.05,
     width_at_rel_height: Annotated[
         float,
         fn.InputMeta(
             hidden=True,
-            description="Relative height at which peak width is measured. 0.5 corresponds to FWHM. Passed to `find_peaks(rel_height=...)`.",
+            description="Relative height at which peak width is measured. 0.5 corresponds "
+            "to FWHM. Passed to `find_peaks(rel_height=...)`.",
         ),
     ] = 0.5,
     plateau_size: Annotated[
         Optional[int],
         fn.InputMeta(
             hidden=True,
-            description="Minimum length of a flat-top (plateau) at the peak. In x-units if `x` is provided, else in samples. See `scipy.signal.find_peaks`.",
+            description="Minimum length of a flat-top (plateau) at the peak. In x-units if `x` "
+            "is provided, else in samples. See `scipy.signal.find_peaks`.",
         ),
     ] = None,
 ) -> Tuple[
-    Annotated[List[PeakProperties], fn.OutputMeta(description="Peak properties",name="peaks")],
-    Annotated[np.ndarray, fn.OutputMeta(description="Normalized X-axis values",name="norm_x")],
-    Annotated[np.ndarray, fn.OutputMeta(description="Normalized Y-axis values",name="norm_y")],
+    Annotated[
+        List[PeakProperties], fn.OutputMeta(description="Peak properties", name="peaks")
+    ],
+    Annotated[
+        np.ndarray, fn.OutputMeta(description="Normalized X-axis values", name="norm_x")
+    ],
+    Annotated[
+        np.ndarray, fn.OutputMeta(description="Normalized Y-axis values", name="norm_y")
+    ],
 ]:
     # Tuple[List[PeakProperties], np.ndarray, np.ndarray]:
     """
