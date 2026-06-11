@@ -61,7 +61,9 @@ class TestPeakFinder(unittest.IsolatedAsyncioTestCase):
         plotter = plot_peak()
 
         plotter.inputs["peak"].connect(idxnode.outputs["element"])
-        print("AAA",peaks.inputs["y"].is_connected(),plotter.inputs["y"].is_connected())
+        print(
+            "AAA", peaks.inputs["y"].is_connected(), plotter.inputs["y"].is_connected()
+        )
         plotter.inputs["y"].forwards_from(peaks.inputs["y"])
         plotter.inputs["x"].forwards_from(peaks.inputs["x"])
 
